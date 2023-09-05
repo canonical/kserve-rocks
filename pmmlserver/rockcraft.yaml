@@ -109,4 +109,3 @@ parts:
     override-build: |
       mkdir -p ${CRAFT_PART_INSTALL}${HOME}/third_party
       cp -r third_party/* ${CRAFT_PART_INSTALL}${HOME}/third_party
-
