@@ -14,18 +14,9 @@ services:
     override: replace
     summary: "Pmml server service"
     startup: enabled
-    command: python3 -m pmmlserver
+    command: python3.10 -m pmmlserver
     environment:
-      HOME: /home/kserve
-      PATH: /home/kserve/prod_venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      PYTHONPATH: /home/kserve/prod_venv/lib/python3.9/site-packages/
-      SHELL: /bin/bash
-    working-dir: /home/kserve/pmmlserver
-
-package-repositories:
-  - type: apt
-    ppa: deadsnakes/ppa
-    priority: always
+      PYTHONPATH: /pmmlserver:/kserve
 
 parts:
   security-team-requirement:
@@ -37,66 +28,28 @@ parts:
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
 
   python:
-    plugin: python
+    plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
     source-tag: v0.11.0
-    build-environment:
-    - HOME: "/home/kserve"
     build-packages:
-    - openjdk-11-jdk
-    stage-packages:
-    - python3.9-venv
+    - python3.10
     overlay-packages:
     - openjdk-11-jdk
+    - python3.10
     override-build: |
-      mkdir -p "${HOME}"
-      cd python 
-      python3.9 -m venv /opt/poetry &&  /opt/poetry/bin/pip install poetry==1.4.0
-      export PATH="$PATH:/opt/poetry/bin"
-      export VIRTUAL_ENV=/prod_venv
-      python3.9 -m venv /prod_venv
-      export PATH="/prod_venv/bin:$PATH"
+      pip install poetry==1.4.0
+      poetry config virtualenvs.create false 
 
-      mkdir kserve_temp 
-      ls -la
-      cp kserve/poetry.lock kserve_temp
-      cp kserve/pyproject.toml kserve_temp
-      (cd kserve_temp && poetry install --no-root --no-interaction --no-cache)
-      cp -R kserve/* kserve_temp
-      (cd kserve_temp && poetry install --no-interaction --no-cache)
+      (cd python/kserve && poetry install --no-interaction)
 
-      mkdir pmmlserver_temp 
-      cp pmmlserver/poetry.lock pmmlserver_temp
-      cp pmmlserver/pyproject.toml pmmlserver_temp
-      (cd pmmlserver_temp && poetry install --no-root --no-interaction --no-cache)
-      cp -R pmmlserver/* pmmlserver_temp
-      (cd pmmlserver_temp && poetry install --no-interaction --no-cache)
+      (cd python/pmmlserver && poetry install --no-interaction)
+      
+      cp -fr python/pmmlserver $CRAFT_PART_INSTALL/pmmlserver
+      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
 
-      mkdir -p ${CRAFT_PART_INSTALL}${HOME}
-      mkdir -p ${CRAFT_PART_INSTALL}/etc
-      mkdir -p ${CRAFT_PART_INSTALL}${HOME}/pmmlserver
-
-      ln -s python3.9 "${CRAFT_PART_INSTALL}"/usr/bin/python3
-
-      echo "python3 -m venv /home/kserve/prod_venv" >> "${HOME}/.bashrc"
-      echo "python3 -m venv /home/kserve/prod_venv" >> "${CRAFT_PART_INSTALL}/etc/profile"
-
-      cp -r kserve_temp/* $CRAFT_PART_INSTALL${HOME}/pmmlserver
-      cp -r pmmlserver_temp/* $CRAFT_PART_INSTALL${HOME}/pmmlserver
-      cp -r /prod_venv $CRAFT_PART_INSTALL${HOME}
-      craftctl default
-
-  # not-root user for this ROCK should be 'kserve'
-  non-root-user:
-    plugin: nil
-    after: [python]
-    overlay-script: |
-      # Create a user in the $CRAFT_OVERLAY chroot
-      useradd -R $CRAFT_OVERLAY -M -s /bin/bash -N -u 1001 kserve
-    override-prime: |
-      craftctl default
-      chown -R 584792:users /home/kserve
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
+      cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
   
   third-party:
     plugin: nil
@@ -104,8 +57,5 @@ parts:
     source: https://github.com/kserve/kserve.git
     source-subdir: python
     source-tag: v0.11.0
-    build-environment:
-    - HOME: "/home/kserve"
     override-build: |
-      mkdir -p ${CRAFT_PART_INSTALL}${HOME}/third_party
-      cp -r third_party/* ${CRAFT_PART_INSTALL}${HOME}/third_party
+      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
