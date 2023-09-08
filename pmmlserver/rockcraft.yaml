@@ -1,0 +1,61 @@
+# Based on https://github.com/kserve/kserve/blob/master/python/pmml.Dockerfile
+name: pmml-server
+summary: Pmml server for Kserve deployments
+description: "Kserve Pmml server"
+version: "v0.11.0_22.04_1"
+license: Apache-2.0
+base: ubuntu:22.04
+build-base: ubuntu:22.04
+platforms:
+    amd64:
+run-user: _daemon_
+services:
+  pmml-server:
+    override: replace
+    summary: "Pmml server service"
+    startup: enabled
+    command: python3.10 -m pmmlserver
+    environment:
+      PYTHONPATH: /pmmlserver:/kserve
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  python:
+    plugin: nil
+    source: https://github.com/kserve/kserve.git
+    source-subdir: python
+    source-tag: v0.11.0
+    build-packages:
+    - python3.10
+    overlay-packages:
+    - openjdk-11-jdk
+    - python3.10
+    override-build: |
+      pip install poetry==1.4.0
+      poetry config virtualenvs.create false 
+
+      (cd python/kserve && poetry install --no-interaction)
+
+      (cd python/pmmlserver && poetry install --no-interaction)
+      
+      cp -fr python/pmmlserver $CRAFT_PART_INSTALL/pmmlserver
+      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
+
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
+      cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
+  
+  third-party:
+    plugin: nil
+    after: [python]
+    source: https://github.com/kserve/kserve.git
+    source-subdir: python
+    source-tag: v0.11.0
+    override-build: |
+      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
