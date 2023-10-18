@@ -1,20 +1,21 @@
-# Based on https://github.com/kserve/kserve/blob/master/python/pmml.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.10.0/python/pmml.Dockerfile
 name: pmml-server
 summary: Pmml server for Kserve deployments
 description: "Kserve Pmml server"
-version: "v0.11.0_22.04_1"
+version: "v0.10.0_22.04_1"
 license: Apache-2.0
 base: ubuntu:22.04
 build-base: ubuntu:22.04
 platforms:
     amd64:
 run-user: _daemon_
+
 services:
   pmml-server:
     override: replace
     summary: "Pmml server service"
     startup: enabled
-    command: python3.10 -m pmmlserver
+    command: bash -c 'export PATH=/opt/conda/bin/:${PATH} && eval $(/opt/conda/bin/conda shell.bash hook 2> /dev/null) && source /opt/conda/etc/profile.d/conda.sh && conda activate && python -m pmmlserver'
     environment:
       PYTHONPATH: /pmmlserver:/kserve
 
@@ -31,31 +32,42 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.11.0
+    source-tag: v0.10.0
     build-packages:
-    - python3.10
+    - wget
     overlay-packages:
     - openjdk-11-jdk
-    - python3.10
     override-build: |
-      pip install poetry==1.4.0
-      poetry config virtualenvs.create false 
+      export PYTHON_VERSION="3.9"
+      export CONDA_PYTHON_VERSION="3"
+      export CONDA_DIR=/opt/conda
 
-      (cd python/kserve && poetry install --no-interaction)
+      wget --quiet https://repo.continuum.io/miniconda/Miniconda$CONDA_PYTHON_VERSION-latest-Linux-x86_64.sh -O /tmp/miniconda.sh 
+      echo 'export PATH=$CONDA_DIR/bin:$PATH' > /etc/profile.d/conda.sh 
+      source /etc/profile.d/conda.sh
+      /bin/bash /tmp/miniconda.sh -b -p $CONDA_DIR 
+      rm -rf /tmp/*  
+      apt-get clean
+      rm -rf /var/lib/apt/lists/*
 
-      (cd python/pmmlserver && poetry install --no-interaction)
-      
-      cp -fr python/pmmlserver $CRAFT_PART_INSTALL/pmmlserver
-      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
+      conda install -y python=$PYTHON_VERSION
 
-      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
-      cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
+      cd python
+      pip install --no-cache-dir --upgrade pip
+      pip3 install -e ./kserve
+      pip install --no-cache-dir -e ./pmmlserver
+
+      cp -fr pmmlserver $CRAFT_PART_INSTALL/pmmlserver
+      cp -fr kserve $CRAFT_PART_INSTALL/kserve
+
+      mkdir -p $CRAFT_PART_INSTALL/opt/conda
+      cp -fr /opt/conda/* $CRAFT_PART_INSTALL/opt/conda/
   
   third-party:
     plugin: nil
     after: [python]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.11.0
+    source-tag: v0.10.0
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
