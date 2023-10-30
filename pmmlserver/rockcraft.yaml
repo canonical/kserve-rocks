@@ -49,7 +49,9 @@ parts:
       cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
 
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/share
       cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
+      cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
   
   third-party:
     plugin: nil
