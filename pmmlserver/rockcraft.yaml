@@ -10,12 +10,17 @@ platforms:
     amd64:
 run-user: _daemon_
 
+package-repositories:
+  - type: apt
+    ppa: deadsnakes/ppa
+    priority: always
+
 services:
   pmml-server:
     override: replace
     summary: "Pmml server service"
     startup: enabled
-    command: bash -c 'export PATH=/opt/conda/bin/:${PATH} && eval $(/opt/conda/bin/conda shell.bash hook 2> /dev/null) && source /opt/conda/etc/profile.d/conda.sh && conda activate && python -m pmmlserver'
+    command: python3.9 -m pmmlserver
     environment:
       PYTHONPATH: /pmmlserver:/kserve
 
@@ -34,35 +39,29 @@ parts:
     source-subdir: python
     source-tag: v0.10.0
     build-packages:
-    - wget
+    - python3.9
+    - python3-pip
+    - python3.9-distutils
     overlay-packages:
     - openjdk-11-jdk
+    - python3.9
+    - python3-pip
+    - python3.9-distutils
+    - python3-setuptools
     override-build: |
-      export PYTHON_VERSION="3.9"
-      export CONDA_PYTHON_VERSION="3"
-      export CONDA_DIR=/opt/conda
-
-      wget --quiet https://repo.continuum.io/miniconda/Miniconda$CONDA_PYTHON_VERSION-latest-Linux-x86_64.sh -O /tmp/miniconda.sh 
-      echo 'export PATH=$CONDA_DIR/bin:$PATH' > /etc/profile.d/conda.sh 
-      source /etc/profile.d/conda.sh
-      /bin/bash /tmp/miniconda.sh -b -p $CONDA_DIR 
-      rm -rf /tmp/*  
-      apt-get clean
-      rm -rf /var/lib/apt/lists/*
-
-      conda install -y python=$PYTHON_VERSION
-
       cd python
-      pip install --no-cache-dir --upgrade pip
-      pip3 install -e ./kserve
-      pip install --no-cache-dir -e ./pmmlserver
+      python3.9 -m pip install --no-cache-dir --upgrade pip
+      python3.9 -m pip install -e ./kserve
+      python3.9 -m pip install --no-cache-dir -e ./pmmlserver
 
       cp -fr pmmlserver $CRAFT_PART_INSTALL/pmmlserver
       cp -fr kserve $CRAFT_PART_INSTALL/kserve
 
-      mkdir -p $CRAFT_PART_INSTALL/opt/conda
-      cp -fr /opt/conda/* $CRAFT_PART_INSTALL/opt/conda/
-  
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.9/dist-packages
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/share
+      cp -fr /usr/local/lib/python3.9/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.9/dist-packages/
+      cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
+
   third-party:
     plugin: nil
     after: [python]
