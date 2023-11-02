@@ -2,7 +2,7 @@
 name: pmml-server
 summary: Pmml server for Kserve deployments
 description: "Kserve Pmml server"
-version: "v0.11.0_22.04_1"
+version: "v0.11.0-22.04-1"
 license: Apache-2.0
 base: ubuntu:22.04
 build-base: ubuntu:22.04
