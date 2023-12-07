@@ -15,6 +15,7 @@ services:
     command: "/storage-initializer/scripts/initializer-entrypoint [ args ]"
     startup: enabled
     on-success: shutdown
+    on-failure: shutdown
     working-dir: /work/
 entrypoint-service: storage-initializer
 
