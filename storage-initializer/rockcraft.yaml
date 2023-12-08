@@ -2,7 +2,7 @@
 name: storage-initializer
 summary: Storage initializer for Kserve deployments
 description: "Kserve storage initializer"
-version: "v0.10.0-22.04-1"
+version: "0.10.0"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
