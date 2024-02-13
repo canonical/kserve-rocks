@@ -13,7 +13,7 @@ services:
     override: replace
     summary: "Paddle server service"
     startup: enabled
-    command: "python3.10 -m paddleserver [ args ]"
+    command: "python3.10 -m paddleserver [ ]"
     environment:
       PYTHONPATH: /paddleserver:/kserve
 entrypoint-service: paddle-server
