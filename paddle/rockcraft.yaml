@@ -1,0 +1,64 @@
+# Based on https://github.com/kserve/kserve/blob/release-0.11/python/paddle.Dockerfile
+name: paddle-server
+summary: Paddle server for Kserve deployments
+description: "Kserve Paddle server"
+version: "0.11.0"
+license: Apache-2.0
+base: ubuntu@22.04
+platforms:
+    amd64:
+run-user: _daemon_
+services:
+  paddle-server:
+    override: replace
+    summary: "Paddle server service"
+    startup: enabled
+    command: "python3.10 -m paddleserver [ args ]"
+    environment:
+      PYTHONPATH: /paddleserver:/kserve
+entrypoint-service: paddle-server
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  python:
+    plugin: nil
+    source: https://github.com/kserve/kserve.git
+    source-subdir: python
+    source-tag: v0.11.0
+    build-packages:
+    - python3.10
+    overlay-packages:
+    - python3.10
+    - build-essential
+    - libgomp1
+    override-build: |
+      pip install poetry==1.4.0
+      poetry config virtualenvs.create false 
+
+      (cd python/kserve && poetry install --no-interaction)
+
+      (cd python/paddleserver && poetry install --no-interaction)
+      
+      cp -fr python/paddleserver $CRAFT_PART_INSTALL/paddleserver
+      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
+
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/share
+      cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
+      cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
+  
+  third-party:
+    plugin: nil
+    after: [python]
+    source: https://github.com/kserve/kserve.git
+    source-subdir: python
+    source-tag: v0.11.0
+    override-build: |
+      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
