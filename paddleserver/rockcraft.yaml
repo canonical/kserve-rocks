@@ -1,5 +1,5 @@
 # Based on https://github.com/kserve/kserve/blob/release-0.11/python/paddle.Dockerfile
-name: paddle-server
+name: paddleserver
 summary: Paddle server for Kserve deployments
 description: "Kserve Paddle server"
 version: "0.11.0"
@@ -9,14 +9,14 @@ platforms:
     amd64:
 run-user: _daemon_
 services:
-  paddle-server:
+  paddleserver:
     override: replace
     summary: "Paddle server service"
     startup: enabled
     command: "python3.10 -m paddleserver [ ]"
     environment:
       PYTHONPATH: /paddleserver:/kserve
-entrypoint-service: paddle-server
+entrypoint-service: paddleserver
 
 parts:
   security-team-requirement:
