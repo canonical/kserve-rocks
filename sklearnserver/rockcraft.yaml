@@ -47,12 +47,12 @@ parts:
       pip install poetry==1.4.0
       poetry config virtualenvs.create false 
 
-      # Install the kserve and sklearnserver python packages and dependencies.
+      # Install the kserve package, this specific server package, and their dependencies.
       #
       # Poetry by default installs the root package as editable.  This means the package
       # is not put into dist-packages, and when we copy dist-packages to the final rock
-      # we will break the kserve and sklearnserver package installs.  
-      # We work around that by installing kserve and sklearnserver from a dummy pyproject.toml
+      # we will break the kserve/this server's package installs.  
+      # We work around that by installing kserve/this server from a dummy pyproject.toml
       # that imports these packages as dependencies.
       mkdir -p ./python_env_builddir
       cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
