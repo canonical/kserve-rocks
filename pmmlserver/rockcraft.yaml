@@ -1,4 +1,4 @@
-# Based on https://github.com/kserve/kserve/blob/release-0.11/python/paddle.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/release-0.11/python/pmml.Dockerfile
 name: pmmlserver
 summary: Pmml server for Kserve deployments
 description: "Kserve Pmml server"
@@ -80,3 +80,4 @@ parts:
     source-tag: v0.11.0
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
+
