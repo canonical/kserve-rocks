@@ -47,7 +47,7 @@ def test_rock(rock_test_env):
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /kserve",
+            "ls -la /usr/local/lib/python3.10/dist-packages/paddleserver",
         ],
         check=True,
     )
@@ -59,7 +59,7 @@ def test_rock(rock_test_env):
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /paddleserver",
+            "ls -la /usr/local/lib/python3.10/dist-packages/kserve",
         ],
         check=True,
     )
@@ -75,3 +75,4 @@ def test_rock(rock_test_env):
         ],
         check=True,
     )
+

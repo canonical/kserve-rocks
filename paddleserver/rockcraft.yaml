@@ -13,9 +13,7 @@ services:
     override: replace
     summary: "Paddle server service"
     startup: enabled
-    command: "python3.10 -m paddleserver [ ]"
-    environment:
-      PYTHONPATH: /paddleserver:/kserve
+    command: "python -m paddleserver [ ]"
 entrypoint-service: paddleserver
 
 parts:
@@ -33,25 +31,47 @@ parts:
     source-subdir: python
     source-tag: v0.11.0
     overlay-packages:
-    - python3.10
+    # We use overlay-packages to get a python3.10 that we can `pip install` packages into.  
+    # For some reason if we do this as a build-package, packages are not installed to the base
+    # python and then doing `poetry config ...` returns as command not found.  
+    - python3.10  
+    # Including python3-pip here means pip also gets primed for the final rock
+    - python3-pip
     - build-essential
     - libgomp1
     override-build: |
+      # Populate the build system's python environment with all packages needed for 
+      # the server in the final rock
+      
+      # Setup poetry
       pip install poetry==1.4.0
       poetry config virtualenvs.create false 
 
-      (cd python/kserve && poetry install --no-interaction)
+      # Install the kserve package, this specific server package, and their dependencies.
+      #
+      # Poetry by default installs the root package as editable.  This means the package
+      # is not put into dist-packages, and when we copy dist-packages to the final rock
+      # we will break the kserve/this server's package installs.  
+      # We work around that by installing kserve/this server from a dummy pyproject.toml
+      # that imports these packages as dependencies.
+      mkdir -p ./python_env_builddir
+      cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
+      (cd python_env_builddir && poetry install --no-interaction --no-root)
 
-      (cd python/paddleserver && poetry install --no-interaction)
-      
-      cp -fr python/paddleserver $CRAFT_PART_INSTALL/paddleserver
-      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
-
+      # Promote the packages we've installed from the local env to the primed image
+      # This doesn't happen automatically from overlay-packages - not sure why
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
-      mkdir -p $CRAFT_PART_INSTALL/usr/local/share
       cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
+
+      # TODO: why do we need this?  is this because of the libgomp1?
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/share
       cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
-  
+
+      # Ensure `python` is an executable command in our primed image
+      mkdir -p $CRAFT_PART_INSTALL/usr/bin/
+      ln -s /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
+
+  # Copy licenses
   third-party:
     plugin: nil
     after: [python]
@@ -60,3 +80,4 @@ parts:
     source-tag: v0.11.0
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
+
