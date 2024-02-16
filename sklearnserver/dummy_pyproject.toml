@@ -8,3 +8,4 @@ authors = ["none"]
 python = ">=3.8,<3.12"
 kserve = { path = "../python/kserve", develop = false }
 sklearnserver = { path = "../python/sklearnserver", develop = false }
+

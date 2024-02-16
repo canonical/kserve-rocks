@@ -80,3 +80,4 @@ parts:
     source-tag: v0.11.0
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
+
