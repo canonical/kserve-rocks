@@ -1,4 +1,8 @@
 # Based on https://github.com/kserve/kserve/blob/release-0.11/python/paddle.Dockerfile
+# 
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
+# This rock is implemented with some atypical patterns due to the native of the upstream
+# Dockerfile.
 name: paddleserver
 summary: Paddle server for Kserve deployments
 description: "Kserve Paddle server"
@@ -30,15 +34,13 @@ parts:
     source: https://github.com/kserve/kserve.git
     source-subdir: python
     source-tag: v0.11.0
+    build-packages:
+      - build-essential
+      - libgomp1
     overlay-packages:
-    # We use overlay-packages to get a python3.10 that we can `pip install` packages into.  
-    # For some reason if we do this as a build-package, packages are not installed to the base
-    # python and then doing `poetry config ...` returns as command not found.  
     - python3.10  
     # Including python3-pip here means pip also gets primed for the final rock
     - python3-pip
-    - build-essential
-    - libgomp1
     override-build: |
       # Populate the build system's python environment with all packages needed for 
       # the server in the final rock
@@ -48,26 +50,20 @@ parts:
       poetry config virtualenvs.create false 
 
       # Install the kserve package, this specific server package, and their dependencies.
-      #
-      # Poetry by default installs the root package as editable.  This means the package
-      # is not put into dist-packages, and when we copy dist-packages to the final rock
-      # we will break the kserve/this server's package installs.  
-      # We work around that by installing kserve/this server from a dummy pyproject.toml
-      # that imports these packages as dependencies.
       mkdir -p ./python_env_builddir
       cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
       (cd python_env_builddir && poetry install --no-interaction --no-root)
 
       # Promote the packages we've installed from the local env to the primed image
-      # This doesn't happen automatically from overlay-packages - not sure why
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
       cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
 
-      # TODO: why do we need this?  is this because of the libgomp1?
+      # TODO: why do we need this?
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
       cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
 
-      # Ensure `python` is an executable command in our primed image
+      # Ensure `python` is an executable command in our primed image by making
+      # a symbolic link
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
       ln -s /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
 
