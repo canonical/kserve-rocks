@@ -8,3 +8,4 @@ authors = ["none"]
 python = ">=3.8,<3.12"
 kserve = { path = "../python/kserve", develop = false }
 pmmlserver = { path = "../python/pmmlserver", develop = false }
+
