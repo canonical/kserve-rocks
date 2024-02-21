@@ -2,7 +2,8 @@
 # 
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
 # This rock is implemented with some atypical patterns due to the native of the upstream
-# Dockerfile.name: pmmlserver
+# Dockerfile.
+name: pmmlserver
 summary: Pmml server for Kserve deployments
 description: "Kserve Pmml server"
 version: "0.11.0"
