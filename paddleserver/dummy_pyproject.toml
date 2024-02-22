@@ -5,6 +5,7 @@ description = ""
 authors = ["none"]
 
 [tool.poetry.dependencies]
+# This range should match that used upstream: https://github.com/kserve/kserve/blob/v0.11.2/python/paddleserver/pyproject.toml#L13
 python = ">=3.8,<3.11"
 kserve = { path = "../python/kserve", develop = false }
 paddleserver = { path = "../python/paddleserver", develop = false }
