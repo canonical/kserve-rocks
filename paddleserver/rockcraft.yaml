@@ -37,6 +37,8 @@ parts:
     build-packages:
       - build-essential
       - libgomp1
+    stage-packages:
+      - libgomp1
     overlay-packages:
     - python3.10  
     # Including python3-pip here means pip also gets primed for the final rock
