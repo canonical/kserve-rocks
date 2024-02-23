@@ -1,22 +1,24 @@
-# Based on https://github.com/kserve/kserve/blob/master/python/pmml.Dockerfile
-name: pmml-server
+# Based on https://github.com/kserve/kserve/blob/release-0.11/python/pmml.Dockerfile
+# 
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
+# This rock is implemented with some atypical patterns due to the native of the upstream
+# Dockerfile.
+name: pmmlserver
 summary: Pmml server for Kserve deployments
 description: "Kserve Pmml server"
-version: "v0.11.0-22.04-1"
+version: "0.11.0"
 license: Apache-2.0
-base: ubuntu:22.04
-build-base: ubuntu:22.04
+base: ubuntu@22.04
 platforms:
     amd64:
 run-user: _daemon_
 services:
-  pmml-server:
+  pmmlserver:
     override: replace
     summary: "Pmml server service"
     startup: enabled
-    command: python3.10 -m pmmlserver
-    environment:
-      PYTHONPATH: /pmmlserver:/kserve
+    command: "python -m pmmlserver [ ]"
+entrypoint-service: pmmlserver
 
 parts:
   security-team-requirement:
@@ -33,26 +35,39 @@ parts:
     source-subdir: python
     source-tag: v0.11.0
     build-packages:
-    - python3.10
+      - build-essential
+      - libgomp1
     overlay-packages:
-    - openjdk-11-jdk
-    - python3.10
+    - python3.10  
+    # Including python3-pip here means pip also gets primed for the final rock
+    - python3-pip
     override-build: |
+      # Populate the build system's python environment with all packages needed for 
+      # the server in the final rock
+      
+      # Setup poetry
       pip install poetry==1.4.0
       poetry config virtualenvs.create false 
 
-      (cd python/kserve && poetry install --no-interaction)
+      # Install the kserve package, this specific server package, and their dependencies.
+      mkdir -p ./python_env_builddir
+      cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
+      (cd python_env_builddir && poetry install --no-interaction --no-root)
 
-      (cd python/pmmlserver && poetry install --no-interaction)
-      
-      cp -fr python/pmmlserver $CRAFT_PART_INSTALL/pmmlserver
-      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
-
+      # Promote the packages we've installed from the local env to the primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
-      mkdir -p $CRAFT_PART_INSTALL/usr/local/share
       cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
+
+      # TODO: why do we need this?
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/share
       cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
-  
+
+      # Ensure `python` is an executable command in our primed image by making
+      # a symbolic link
+      mkdir -p $CRAFT_PART_INSTALL/usr/bin/
+      ln -s /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
+
+  # Copy licenses
   third-party:
     plugin: nil
     after: [python]
@@ -61,3 +76,4 @@ parts:
     source-tag: v0.11.0
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
+
