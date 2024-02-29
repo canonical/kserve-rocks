@@ -1,6 +1,8 @@
-## Summary of upstream dockerfiles
+# kserve's server rocks
 
-The kserve server rocks in this repo build images for the upstream dockerfiles located [here](https://github.com/kserve/kserve/tree/master/python).  These server images all have the following common traits:
+## Summary of upstream's dockerfiles
+
+The kserve server images are a collection of different inference server runtimes, such as sklearn or paddle.  This repo includes rocks for the upstream server images located [here](https://github.com/kserve/kserve/tree/master/python).  These server images all have the following common traits:
 
 * they are implemented as python packages and use [poetry](https://python-poetry.org/) to manage their dependencies
 * each server installs its own server-specific package (ex: [sklearn](https://github.com/kserve/kserve/tree/master/python/sklearnserver))
@@ -65,3 +67,45 @@ where, for each of `kserve` and `sklearnserver`, they copy the poetry project (.
 ### Ensuring the entrypoint/rock internals are as similar to upstream as possible
 
 The upstream install procedure results in `python` being executable, but our rock builds with `python3.10` being the executable.  To address this, we add a symbolic link to `$CRAFT_PART_INSTALL`
+
+## Integration testing the server images
+
+For every inference server provided, upstream maintains an example usage in their [Model Serving Runtimes docs](https://kserve.github.io/website/master/modelserving/v1beta1/serving_runtime/).  Each example includes a model for the given server, for example the [`Scikit-learn`](https://kserve.github.io/website/master/modelserving/v1beta1/sklearn/v2/#deploy-the-model-with-rest-endpoint-through-inferenceservice/) runtime has a provided model at `gs://kfserving-examples/models/sklearn/1.0/model`.  
+
+While the upstream examples show how to use these models in kserve itself, we can use the same models to test the inference server rocks directly.  For example, we can do:
+
+Launch the server with:
+```
+# download the model locally
+gsutil cp -r gs://kfserving-examples/models/sklearn/1.0/model ./sample_model/
+
+# mount the model into the container at runtime
+docker run -p 8080:8080 -v $(pwd)/sample_model:/mnt/models sklearnserver:0.11.2 --model_name test_model --model_dir=/mnt/models --http_port=8080
+
+```
+
+Test the server with:
+```
+cat <<EOF >> iris-input-v2.json
+{
+  "inputs": [
+    {
+      "name": "input-0",
+      "shape": [2, 4],
+      "datatype": "FP32",
+      "data": [
+        [6.8, 2.8, 4.8, 1.4],
+        [6.0, 3.4, 4.5, 1.6]
+      ]
+    }
+  ]
+}
+EOF
+
+curl -v \
+  -H "Content-Type: application/json" \
+  -d @./iris-input-v2.json \
+  localhost:8080/v2/models/test_model/infer
+```
+
+which should return the expected output described in the docs.  
