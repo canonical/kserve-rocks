@@ -29,6 +29,16 @@ parts:
       dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
 
+  java:
+    plugin: nil
+    build-packages:
+      - default-jdk
+    stage-packages:
+      - default-jdk
+    # Also stage the links for java executable
+    override-build:
+      ln -s /usr/lib/jvm/java-11-openjdk-amd64/bin/java $CRAFT_PART_INSTALL/usr/bin/java
+
   python:
     plugin: nil
     source: https://github.com/kserve/kserve.git
