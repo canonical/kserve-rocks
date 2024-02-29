@@ -5,6 +5,7 @@ From the [upstream usage example](https://kserve.github.io/website/master/models
 Launch the server with:
 ```
 # download the model locally
+mkdir sample_model
 gsutil cp -r gs://kfserving-examples/models/sklearn/1.0/model ./sample_model/
 
 # mount the model into the container at runtime
