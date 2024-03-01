@@ -87,7 +87,7 @@ Launch the server with:
 gsutil cp -r gs://kfserving-examples/models/sklearn/1.0/model ./sample_model/
 
 # mount the model into the container at runtime
-docker run -p 8080:8080 -v $(pwd)/sample_model:/mnt/models sklearnserver:0.11.2 --model_name test_model --model_dir=/mnt/models --http_port=8080
+docker run -p 8080:8080 -v $(pwd)/sample_model:/mnt/models sklearnserver:<version> --model_name test_model --model_dir=/mnt/models --http_port=8080
 
 ```
 
