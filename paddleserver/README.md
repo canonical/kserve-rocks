@@ -1,4 +1,11 @@
-## Testing instructions
+## Testing
+
+### Prerequisites
+
+* docker
+* Google Cloud CLI tools ([installation guide](https://cloud.google.com/sdk/docs/install))
+
+### Instructions
 
 From the [upstream usage example](https://kserve.github.io/website/master/modelserving/v1beta1/paddle/), this rock can be tested locally using:
 
@@ -9,7 +16,7 @@ mkdir sample_model
 gsutil cp -r gs://kfserving-examples/models/paddle/resnet ./sample_model/
 
 # mount the model into the container at runtime
-docker run -p 8080:8080 -v $(pwd)/sample_model/resnet:/mnt/models paddleserver:0.11.2 --model_name test_model --model_dir=/mnt/models --http_port=8080
+docker run -p 8080:8080 -v $(pwd)/sample_model/resnet:/mnt/models paddleserver:<version> --model_name test_model --model_dir=/mnt/models --http_port=8080
 
 ```
 
