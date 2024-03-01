@@ -1,4 +1,11 @@
-## Testing instructions
+## Testing
+
+### Prerequisites
+
+* docker
+* Google Cloud CLI tools ([installation guide](https://cloud.google.com/sdk/docs/install))
+
+### Instructions
 
 From the [upstream usage example](https://kserve.github.io/website/master/modelserving/v1beta1/sklearn/v2/#deploy-the-model-with-rest-endpoint-through-inferenceservice/), this rock can be tested locally using:
 
