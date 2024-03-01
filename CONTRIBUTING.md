@@ -70,6 +70,13 @@ The upstream install procedure results in `python` being executable, but our roc
 
 ## Integration testing the server images
 
+### Prerequisites
+
+* docker
+* Google Cloud CLI tools ([installation guide](https://cloud.google.com/sdk/docs/install))
+
+### Instructions
+
 For every inference server provided, upstream maintains an example usage in their [Model Serving Runtimes docs](https://kserve.github.io/website/master/modelserving/v1beta1/serving_runtime/).  Each example includes a model for the given server, for example the [`Scikit-learn`](https://kserve.github.io/website/master/modelserving/v1beta1/sklearn/v2/#deploy-the-model-with-rest-endpoint-through-inferenceservice/) runtime has a provided model at `gs://kfserving-examples/models/sklearn/1.0/model`.  
 
 While the upstream examples show how to use these models in kserve itself, we can use the same models to test the inference server rocks directly.  For example, we can do:
