@@ -1,8 +1,11 @@
-# Based on https://github.com/kserve/kserve/blob/v0.10.0/python/storage-initializer.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/master/python/storage-initializer.Dockerfile
+#
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+# This rock is implemented with some atypical patterns due to the native of the upstream
 name: storage-initializer
 summary: Storage initializer for Kserve deployments
 description: "Kserve storage initializer"
-version: "0.10.0"
+version: "0.11.2"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -10,15 +13,16 @@ platforms:
 run-user: _daemon_
 services:
   storage-initializer:
-    summary: "Kserve storage initializer service"
     override: replace
-    command: "/storage-initializer/scripts/initializer-entrypoint [ args ]"
+    summary: "Kserve storage initializer service"
     startup: enabled
+    command: "/storage-initializer/scripts/initializer-entrypoint [ ]"
     on-success: shutdown
     on-failure: shutdown
     working-dir: /work/
 entrypoint-service: storage-initializer
 
+# TODO
 package-repositories:
   - type: apt
     ppa: deadsnakes/ppa
@@ -32,41 +36,72 @@ parts:
       (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && dpkg-query -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
 
   python:
-    plugin: python
+    plugin: nil
     source: https://github.com/kserve/kserve.git
-    source-subdir: python
-    source-tag: v0.10.0
-    stage-packages:
-    - python3.9-venv
+    source-tag: v0.11.2
     build-packages:
-    - python3.9
-    - python3.9-venv
-    - python3.9-dev
     - gcc
     - libkrb5-dev
     - krb5-config
-    python-packages:
-    - ./kserve
-    - krbcontext==0.10
-    - hdfs~=2.6.0
-    - requests-kerberos==0.14.0
-    build-environment: 
-    - PARTS_PYTHON_INTERPRETER: python3.9
+    overlay-packages:
+    - python3.10
+    # Including python3-pip here means pip also gets primed for the final rock
+    - python3-pip
     override-build: |
-      ln -s python3.9 "${CRAFT_PART_INSTALL}"/usr/bin/python3
-      craftctl default
+      # Populate the build system's python environment with all packages needed for 
+      # the server in the final rock
+      
+      # Setup poetry
+      pip install poetry==1.7.1
+      poetry config virtualenvs.create false 
 
-  files:
+      # Install the kserve package, this specific server package, and their dependencies.
+      mkdir -p ./python_env_builddir
+      cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
+      (cd python_env_builddir && poetry install --no-interaction --no-root)
+
+      # Promote the packages we've installed from the local env to the primed image
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
+      cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
+
+      # TODO: why do we need this?
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/share
+      cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
+
+      # Ensure `python` is an executable command in our primed image by making
+      # a symbolic link
+      mkdir -p $CRAFT_PART_INSTALL/usr/bin/
+      ln -sf /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
+      ln -sf /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python3
+
+      # Install additional packages
+      pip install --no-cache-dir krbcontext==0.10 hdfs~=2.6.0 requests-kerberos==0.14.0
+
+      # Copy the storage-initializer scripts
+      chmod +x ./python/storage-initializer/scripts/initializer-entrypoint
+      cp -r ./python/storage-initializer $CRAFT_PART_INSTALL/storage-initializer
+
+  copy-licenses:
     plugin: nil
+    after: [python]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.10.0
+    source-tag: v0.11.2
     override-build: |
-      cd python
+      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
 
-      cp -r third_party $CRAFT_PART_INSTALL/third_party
-      cp -r kserve $CRAFT_PART_INSTALL/kserve
-      cp VERSION $CRAFT_PART_INSTALL/VERSION
-      cp -r storage-initializer $CRAFT_PART_INSTALL/storage-initializer
-      chmod +x $CRAFT_PART_INSTALL/storage-initializer/scripts/initializer-entrypoint
-      mkdir $CRAFT_PART_INSTALL/work
+  create-work-dir:
+    # Create a directory that the user has write access to.  This is the default
+    # root location for the script
+    # Note: If any other part writes to this dir, here's part must execute after that
+    #       otherwise the other part's operations will clobber the permissions set here
+    plugin: nil
+    override-build: |
+      mkdir -p $CRAFT_PART_INSTALL/work
+    permissions:
+      - path: work
+        # 584792 is the _daemon_ user
+        owner: 584792
+        group: 584792
+        mode: "755"
+
