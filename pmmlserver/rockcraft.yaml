@@ -6,7 +6,7 @@
 name: pmmlserver
 summary: Pmml server for Kserve deployments
 description: "Kserve Pmml server"
-version: "0.11.0"
+version: "0.11.2"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -43,7 +43,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.11.0
+    source-tag: v0.11.2
     build-packages:
       - build-essential
       - libgomp1
@@ -83,7 +83,7 @@ parts:
     after: [python]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.11.0
+    source-tag: v0.11.2
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
 
