@@ -1,0 +1,12 @@
+[tool.poetry]
+name = "workaround-for-editable-install"
+version = "0.0.1"
+description = ""
+authors = ["none"]
+
+[tool.poetry.dependencies]
+# This range should match that used in upstream's server pyproject.toml
+python = ">=3.8,<3.12"
+kserve = { path = "../python/kserve", develop = false }
+xgbserver = { path = "../python/xgbserver", develop = false }
+
