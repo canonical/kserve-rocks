@@ -14,8 +14,7 @@ services:
     override: replace
     summary: "KServe controller manager service"
     startup: enabled
-    command: "/manager [ ]"
-entrypoint-service: kserve-controller
+    command: "/manager"
 
 parts:
   security-team-requirement:
