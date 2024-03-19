@@ -37,9 +37,8 @@ parts:
       - GOOS: linux
     override-build: |
 
-      # Remove the source from the build directory so we don't
-      # accidentally use the wrong inputs.
-      # The build steps below copy everything that is needed to the working directory
+      # Empty the build directory and copy the build files that are
+      # specified in the upstream Dockerfile.
       rm -rf ./*
 
       # Copy in the go src
@@ -56,6 +55,3 @@ parts:
       # Copy the files to the install directory
       cp -r $CRAFT_PART_SRC/third_party/ $CRAFT_PART_INSTALL/third_party/
       cp -r manager $CRAFT_PART_INSTALL/manager
-
-
-
