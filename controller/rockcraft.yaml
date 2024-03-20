@@ -1,0 +1,57 @@
+# Dockerfile https://github.com/kserve/kserve/blob/v0.11.2/Dockerfile
+name: kserve-controller
+summary: KServe controller
+description: "KServe controller manager"
+version: "0.11.2"
+license: Apache-2.0
+base: ubuntu@22.04
+platforms:
+    amd64:
+run-user: _daemon_
+
+services:
+  kserve-controller:
+    override: replace
+    summary: "KServe controller manager service"
+    startup: enabled
+    command: "/manager"
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  controller:
+    plugin: go
+    source: https://github.com/kserve/kserve
+    source-type: git
+    source-tag: v0.11.2
+    build-snaps:
+      - go/1.20/stable
+    build-environment:
+      - CGO_ENABLED: 0
+      - GOOS: linux
+    override-build: |
+
+      # Empty the build directory and copy the build files that are
+      # specified in the upstream Dockerfile.
+      rm -rf ./*
+
+      # Copy in the go src
+      cp $CRAFT_PART_SRC/go.mod $CRAFT_PART_SRC/go.sum ./
+
+      go mod download
+
+      cp -r $CRAFT_PART_SRC/cmd ./cmd
+      cp -r $CRAFT_PART_SRC/pkg ./pkg
+
+      # Build
+      go build -a -o manager ./cmd/manager
+
+      # Copy the files to the install directory
+      cp -r $CRAFT_PART_SRC/third_party/ $CRAFT_PART_INSTALL/third_party/
+      cp -r manager $CRAFT_PART_INSTALL/manager
