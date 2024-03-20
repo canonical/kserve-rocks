@@ -17,11 +17,20 @@ def test_rock():
 
     # assert the rock contains the expected files
     subprocess.run(
-        ["docker", "run", LOCAL_ROCK_IMAGE, "exec", "ls", "-la", "/third_party"],
+        [
+            "docker",
+            "run",
+            "--rm",
+            LOCAL_ROCK_IMAGE,
+            "exec",
+            "ls",
+            "-la",
+            "/third_party",
+        ],
         check=True,
     )
 
     subprocess.run(
-        ["docker", "run", LOCAL_ROCK_IMAGE, "exec", "ls", "-la", "/manager"],
+        ["docker", "run", "--rm", LOCAL_ROCK_IMAGE, "exec", "ls", "-la", "/manager"],
         check=True,
     )
