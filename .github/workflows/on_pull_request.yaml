@@ -13,6 +13,6 @@ jobs:
     secrets: inherit
     with:
       microk8s-channel: 1.26-strict/stable
-      juju-channel: 3.1/stable
+      juju-channel: 3.4/stable
       python-version: "3.8"
       rockcraft-channel: latest/stable
