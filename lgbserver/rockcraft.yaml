@@ -48,7 +48,7 @@ parts:
       # the server in the final rock
       
       # Setup poetry
-      pip install poetry==1.4.0
+      pip install poetry==1.7.1
       poetry config virtualenvs.create false 
 
       # Install the kserve package, this specific server package, and their dependencies.
