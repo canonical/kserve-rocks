@@ -58,10 +58,6 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
       cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
 
-      # TODO: why do we need this?
-      mkdir -p $CRAFT_PART_INSTALL/usr/local/share
-      cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
-
       # Ensure `python` is an executable command in our primed image by making
       # a symbolic link
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
