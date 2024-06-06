@@ -1,4 +1,4 @@
-# Based on https://github.com/kserve/kserve/blob/release-0.11/python/sklearn.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.12.1/python/sklearn.Dockerfile
 # 
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
 # This rock is implemented with some atypical patterns due to the native of the upstream
@@ -6,7 +6,7 @@
 name: sklearnserver
 summary: sklearn server for Kserve deployments
 description: "Kserve sklearn server"
-version: "0.11.2"
+version: "0.12.1"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -33,7 +33,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.11.2
+    source-tag: v0.12.1
     build-packages:
       - build-essential
       - libgomp1
@@ -46,7 +46,7 @@ parts:
       # the server in the final rock
       
       # Setup poetry
-      pip install poetry==1.4.0
+      pip install poetry==1.7.1
       poetry config virtualenvs.create false 
 
       # Install the kserve package, this specific server package, and their dependencies.
@@ -57,10 +57,6 @@ parts:
       # Promote the packages we've installed from the local env to the primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
       cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
-
-      # TODO: why do we need this?
-      mkdir -p $CRAFT_PART_INSTALL/usr/local/share
-      cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
 
       # Ensure `python` is an executable command in our primed image by making
       # a symbolic link
@@ -73,7 +69,7 @@ parts:
     after: [python]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.11.2
+    source-tag: v0.12.1
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
 
