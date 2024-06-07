@@ -13,7 +13,7 @@ def test_rock():
     check_rock = CheckRock("rockcraft.yaml")
     rock_image = check_rock.get_name()
     rock_version = check_rock.get_version()
-    LOCAL_rock_IMAGE = f"{rock_image}:{rock_version}"
+    LOCAL_ROCK_IMAGE = f"{rock_image}:{rock_version}"
 
     # assert the rock contains the expected files
     subprocess.run(
@@ -21,7 +21,7 @@ def test_rock():
             "docker",
             "run",
             "--rm",
-            LOCAL_rock_IMAGE,
+            LOCAL_ROCK_IMAGE,
             "exec",
             "ls",
             "-la",
@@ -35,7 +35,7 @@ def test_rock():
             "docker",
             "run",
             "--rm",
-            LOCAL_rock_IMAGE,
+            LOCAL_ROCK_IMAGE,
             "exec",
             "ls",
             "-la",
