@@ -1,4 +1,4 @@
-# Dockerfile https://github.com/kserve/kserve/blob/v0.12.1/agent.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.12.1/agent.Dockerfile
 name: kserve-agent
 summary: KServe agent
 description: "KServe model agent"
