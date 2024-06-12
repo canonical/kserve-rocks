@@ -7,7 +7,7 @@ jobs:
 
   on-pull-request:
     name: Get ROCKs modified and build-scan-test them
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get-rocks-modified-and-build-scan-test-publish.yaml@main
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get-rocks-modified-and-build-scan-test-publish.yaml@KF-5866-fix-skopeo
     permissions:
       pull-requests: read
     secrets: inherit
