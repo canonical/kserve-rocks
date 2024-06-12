@@ -1,8 +1,8 @@
-# Based on https://github.com/kserve/kserve/blob/v0.12.1/Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.13.0/Dockerfile
 name: kserve-controller
 summary: KServe controller
 description: "KServe controller manager"
-version: "0.12.1"
+version: "0.13.0"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -29,7 +29,7 @@ parts:
     plugin: go
     source: https://github.com/kserve/kserve
     source-type: git
-    source-tag: v0.12.1
+    source-tag: v0.13.0
     build-snaps:
       - go/1.21/stable
     build-environment:
