@@ -10,9 +10,9 @@ The KServe server images are a collection of different inference server runtimes
 
 The Dockerfile for each of these images takes advantage of how each server is defined as a poetry package, using `poetry install` in the Dockerfile directly.
 
-## Implementation details of the ROCKs in this repo
+## Implementation details of the rocks in this repo
 
-The ROCKs for the KServe servers require some atypical workarounds, mostly due to the upstream project using poetry to install its dependencies.  These are documented here in detail, and briefly noted in the rockcraft.yaml files in this repository.
+The rocks for the KServe servers require some atypical workarounds, mostly due to the upstream project using poetry to install its dependencies.  These are documented here in detail, and briefly noted in the rockcraft.yaml files in this repository.
 
 ### Installing Python/pip via overlay-packages
 
@@ -70,4 +70,4 @@ The upstream install procedure results in `python` being executable, but our roc
 
 ## Integration testing the server images
 
-For every inference server provided, upstream maintains an example usage in their [Model Serving Runtimes docs](https://kserve.github.io/website/master/modelserving/v1beta1/serving_runtime/).  Each example includes a model for the given server, sample input, and an example `curl` call.  These can be used for integration testing of the models without deploying KServe.  See also the `README.md` files in the subdirs of this repo for some of these examples applied to our ROCKs.  
+For every inference server provided, upstream maintains an example usage in their [Model Serving Runtimes docs](https://kserve.github.io/website/master/modelserving/v1beta1/serving_runtime/).  Each example includes a model for the given server, sample input, and an example `curl` call.  These can be used for integration testing of the models without deploying KServe.  See also the `README.md` files in the subdirs of this repo for some of these examples applied to our rocks.  
