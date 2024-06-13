@@ -1,2 +1,2 @@
 # kserve-rocks
-ROCKs for Kserve
+rocks for Kserve
