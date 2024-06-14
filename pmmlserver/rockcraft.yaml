@@ -1,4 +1,4 @@
-# Based on https://github.com/kserve/kserve/blob/v0.12.1/python/pmml.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.13.0/python/pmml.Dockerfile
 # 
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
 # This rock is implemented with some atypical patterns due to the native of the upstream
@@ -6,7 +6,7 @@
 name: pmmlserver
 summary: Pmml server for Kserve deployments
 description: "Kserve Pmml server"
-version: "0.12.1"
+version: "0.13.0"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -43,7 +43,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.12.1
+    source-tag: v0.13.0
     build-packages:
       - build-essential
       - libgomp1
@@ -83,7 +83,7 @@ parts:
     after: [python]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.12.1
+    source-tag: v0.13.0
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
 
