@@ -16,6 +16,5 @@ jobs:
     secrets:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     with:
-      report-vulnerabilities: true
       severity: "HIGH,CRITICAL"
       branch: ${{ matrix.branch }}
