@@ -8,13 +8,14 @@ base: ubuntu@22.04
 platforms:
     amd64:
 run-user: _daemon_
+entrypoint-service: kserve-agent
 
 services:
   kserve-agent:
     override: replace
     summary: "KServe agent service"
     startup: enabled
-    command: "/ko-app/agent"
+    command: "/ko-app/agent [ ]"
 
 parts:
   security-team-requirement:
