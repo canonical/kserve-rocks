@@ -3,7 +3,7 @@ summary: TensorFlow model server
 description: Test
 version: v2.6.2
 license: Apache-2.0
-base: ubuntu:22.04
+base: ubuntu@22.04
 run-user: _daemon_
 services:
   serving:
@@ -80,17 +80,17 @@ parts:
       - LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:/usr/include/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
       - BAZEL_VERSION: 3.7.2
       - CI_BUILD_PYTHON: python
-      - TF_NEED_CUDA: 1
-      - TF_NEED_TENSORRT: 1
+      - TF_NEED_CUDA: "1"
+      - TF_NEED_TENSORRT: "1"
       - TENSORRT_INSTALL_PATH: /usr/lib/x86_64-linux-gnu
-      - TF_CUDA_VERSION: 11.2
-      - TF_CUDNN_VERSION: 8
+      - TF_CUDA_VERSION: "11.2"
+      - TF_CUDNN_VERSION: "8"
       - TMP: /tmp
       - TF_SERVING_BUILD_OPTIONS: "--config=release"
 
-    override-build:
+    override-build: |
       set -xe
-      
+
       find /usr/local/cuda-11.2/lib64/ -type f -name 'lib*_static.a' -not -name 'libcudart_static.a' -delete
       rm /usr/lib/x86_64-linux-gnu/libcudnn_static_v8.a
 
@@ -111,7 +111,7 @@ parts:
       update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6
       update-alternatives --install /usr/bin/python python /usr/bin/python3.6
       
-      curl -fSsL -O https://bootstrap.pypa.io/get-pip.py
+      curl -fSsL -O "https://bootstrap.pypa.io/get-pip.py"
 
       python3 get-pip.py
 
@@ -177,11 +177,6 @@ parts:
       bazel clean --expunge --color=yes
       rm -rf /root/.cache      
       
-    stage-environment:
-      - CUDNN_VERSION: "8.1.0.77"
-      - TF_TENSORRT_VERSION: "7.2.2"
-      - CUDA: "11.2"
-      - LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH"
     override-stage: |
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
       exit 1
