@@ -1,0 +1,189 @@
+name: tensorflow-serving
+summary: TensorFlow model server
+description: |
+None
+version: v2.6.2
+license: Apache-2.0
+base: ubuntu:22.04
+run-user: _daemon_
+services:
+  serving:
+    override: replace
+    summary: "tensorflow model server"
+    startup: enabled
+    environment:
+       NVIDIA_VISIBLE_DEVICES: all
+       NVIDIA_DRIVER_CAPABILITIES: compute,utility
+       LD_LIBRARY_PATH: /usr/local/nvidia/lib:/usr/local/nvidia/lib64
+    command: nil
+platforms:
+  amd64:
+
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  serving:
+    plugin: nil
+    source: https://github.com/tensorflow/serving
+    source-type: git
+    source-tag: 2.6.2
+    build-packages:
+      - automake
+      - build-essential
+      - ca-certificates
+      - cuda-command-line-tools-11-2
+      - libcublas-11-2 
+      - libcublas-dev-11-2 
+      - cuda-nvrtc-11-2 
+      - cuda-nvrtc-dev-11-2 
+      - cuda-nvprune-11-2 
+      - cuda-cudart-dev-11-2 
+      - libcufft-dev-11-2 
+      - libcurand-dev-11-2 
+      - libcusolver-dev-11-2 
+      - libcusparse-dev-11-2 
+      - curl 
+      - git 
+      - libfreetype6-dev 
+      - libtool 
+      - libcudnn8=${CUDNN_VERSION}-1+cuda${CUDA} 
+      - libcudnn8-dev=${CUDNN_VERSION}-1+cuda${CUDA} 
+      - libcurl3-dev 
+      - libzmq3-dev 
+      - mlocate 
+      - openjdk-8-jdk
+      - openjdk-8-jre-headless 
+      - pkg-config 
+      - python-dev 
+      - software-properties-common 
+      - swig 
+      - unzip 
+      - wget 
+      - zip 
+      - zlib1g-dev 
+      - python3-distutils 
+      - python-distutils-extra
+      - python3.6
+      - python3.6-dev
+      - python3-pip
+      - python3.6-venv
+    build-environment:
+      - CUDNN_VERSION: "8.1.0.77"
+      - TF_TENSORRT_VERSION: "7.2.2"
+      - CUDA: "11.2"
+      - LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:/usr/include/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+      - BAZEL_VERSION: 3.7.2
+      - CI_BUILD_PYTHON: python
+      - TF_NEED_CUDA: 1
+      - TF_NEED_TENSORRT: 1
+      - TENSORRT_INSTALL_PATH: /usr/lib/x86_64-linux-gnu
+      - TF_CUDA_VERSION: 11.2
+      - TF_CUDNN_VERSION: 8
+      - TMP: /tmp
+      - TF_SERVING_BUILD_OPTIONS: --config=release
+
+    override-build:
+      find /usr/local/cuda-11.2/lib64/ -type f -name 'lib*_static.a' -not -name 'libcudart_static.a' -delete
+      rm /usr/lib/x86_64-linux-gnu/libcudnn_static_v8.a
+
+      apt-get update && \
+        apt-get install -y --no-install-recommends libnvinfer7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+        libnvinfer-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+        libnvinfer-plugin-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+        libnvinfer-plugin7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+        libnvonnxparsers7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+        libnvparsers7=${TF_TENSORRT_VERSION}-1+cuda11.1\
+        libnvonnxparsers-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+        libnvparsers-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*;
+
+      python3.6 -m pip install pip --upgrade
+
+      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6
+      update-alternatives --install /usr/bin/python python /usr/bin/python3.6
+	
+      curl -fSsL -O https://bootstrap.pypa.io/get-pip.py
+
+      python3 get-pip.py
+
+      rm get-pip.py
+
+      pip3 --no-cache-dir install \
+        future>=0.17.1 \
+        grpcio \
+        h5py \
+        keras_applications>=1.0.8 \
+        keras_preprocessing>=1.1.0 \
+        mock \
+        numpy \
+        portpicker \
+        requests \
+        --ignore-installed six>=1.12.0
+
+      mkdir /bazel
+
+      cd bazel
+
+      curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -O https://github.com/bazelbuild/bazel/releases/download/$BAZEL_VERSION/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh
+
+      curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -o /bazel/LICENSE.txt https://raw.githubusercontent.com/bazelbuild/bazel/master/LICENSE
+
+      chmod +x bazel-*.sh
+
+      ./bazel-$BAZEL_VERSION-installer-linux-x86_64.sh
+
+      cd ..
+
+      rm -f /bazel/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh
+
+      # Fix paths so that CUDNN can be found: https://github.com/tensorflow/tensorflow/issues/8264
+      mkdir /usr/lib/x86_64-linux-gnu/include/
+      ln -s /usr/include/cudnn.h /usr/local/cuda/include/cudnn.h
+      ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so /usr/local/cuda/lib64/libcudnn.so
+      ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so.${TF_CUDNN_VERSION} /usr/local/cuda/lib64/libcudnn.so.${TF_CUDNN_VERSION}
+
+      export TF_NCCL_VERSION=
+
+      cd /tensorflow-serving
+
+      curl -sSL --retry 5 https://github.com/tensorflow/serving/tarball/${TF_SERVING_VERSION_GIT_COMMIT} | tar --strip-components=1 -xzf -
+
+      export TF_SERVING_BAZEL_OPTIONS=""
+
+      ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1
+      export LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH}
+
+      bazel build --color=yes --curses=yes --config=cuda --copt="-fPIC"\
+      ${TF_SERVING_BAZEL_OPTIONS} \
+      --verbose_failures \
+      --output_filter=DONT_MATCH_ANYTHING \
+      ${TF_SERVING_BUILD_OPTIONS} \
+      tensorflow_serving/model_servers:tensorflow_model_server
+
+      cp bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server ${CRAFT_PART_INSTALL}/usr/local/bin/
+
+      rm /usr/local/cuda/lib64/stubs/libcuda.so.1
+
+      # Clean build
+      bazel clean --expunge --color=yes
+      rm -rf /root/.cache      
+      
+    stage-environment:
+      - CUDNN_VERSION: "8.1.0.77"
+      - TF_TENSORRT_VERSION: "7.2.2"
+      - CUDA: "11.2"
+      - LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:$LD_LIBRARY_PATH"
+    override-stage: |
+      mkdir -p $CRAFT_PART_INSTALL/usr/bin/
+      cp 
+
+      
+    
