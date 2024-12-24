@@ -1,7 +1,6 @@
 name: tensorflow-serving
 summary: TensorFlow model server
-description: |
-None
+description: Test
 version: v2.6.2
 license: Apache-2.0
 base: ubuntu:22.04
