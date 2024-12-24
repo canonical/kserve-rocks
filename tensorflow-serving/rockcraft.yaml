@@ -95,14 +95,14 @@ parts:
       rm /usr/lib/x86_64-linux-gnu/libcudnn_static_v8.a
 
       apt-get update && \
-        apt-get install -y --no-install-recommends libnvinfer7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-        libnvinfer-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-        libnvinfer-plugin-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-        libnvinfer-plugin7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-        libnvonnxparsers7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-        libnvparsers7=${TF_TENSORRT_VERSION}-1+cuda11.1\
-        libnvonnxparsers-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-        libnvparsers-dev=${TF_TENSORRT_VERSION}-1+cuda11.1
+      apt-get install -y --no-install-recommends libnvinfer7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+      libnvinfer-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+      libnvinfer-plugin-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+      libnvinfer-plugin7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+      libnvonnxparsers7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+      libnvparsers7=${TF_TENSORRT_VERSION}-1+cuda11.1\
+      libnvonnxparsers-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
+      libnvparsers-dev=${TF_TENSORRT_VERSION}-1+cuda11.1
       apt-get clean
       rm -rf /var/lib/apt/lists/*
 
@@ -118,21 +118,25 @@ parts:
       rm get-pip.py
 
       pip3 --no-cache-dir install \
-        future>=0.17.1 \
-        grpcio \
-        h5py \
-        keras_applications>=1.0.8 \
-        keras_preprocessing>=1.1.0 \
-        mock \
-        numpy \
-        portpicker \
-        requests \
-        --ignore-installed six>=1.12.0
+      future>=0.17.1 \
+      grpcio \
+      h5py \
+      keras_applications>=1.0.8 \
+      keras_preprocessing>=1.1.0 \
+      mock \
+      numpy \
+      portpicker \
+      requests \
+      --ignore-installed six>=1.12.0
 
       mkdir /bazel
 
       cd bazel
       
+      curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -O https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
+      
+      curl -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36" -fSsL -o /LICENSE.txt https://raw.githubusercontent.com/bazelbuild/bazel/master/LICENSE
+
       chmod +x bazel-*.sh
 
       ./bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
