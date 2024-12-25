@@ -3,7 +3,7 @@ summary: TensorFlow model server
 description: Test
 version: v2.6.2
 license: Apache-2.0
-base: ubuntu@22.04
+base: ubuntu@20.04
 run-user: _daemon_
 services:
   serving:
@@ -27,8 +27,8 @@ parts:
       (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
       dpkg-query -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
-
-  serving:
+      
+  cuda-build:
     plugin: nil
     source: https://github.com/tensorflow/serving
     source-type: git
@@ -37,25 +37,8 @@ parts:
       - automake
       - build-essential
       - ca-certificates
-      - cuda-command-line-tools-11-2
-      - libcublas-11-2 
-      - libcublas-dev-11-2 
-      - cuda-nvrtc-11-2 
-      - cuda-nvrtc-dev-11-2 
-      - cuda-nvprune-11-2 
-      - cuda-cudart-dev-11-2 
-      - libcufft-dev-11-2 
-      - libcurand-dev-11-2 
-      - libcusolver-dev-11-2 
-      - libcusparse-dev-11-2 
       - curl 
       - git 
-      - libfreetype6-dev 
-      - libtool 
-      - libcudnn8=8.1.0.77-1+cuda11.2
-      - libcudnn8-dev=8.1.0.77-1+cuda11.2
-      - libcurl3-dev 
-      - libzmq3-dev 
       - mlocate 
       - openjdk-8-jdk
       - openjdk-8-jre-headless 
@@ -69,14 +52,13 @@ parts:
       - zlib1g-dev 
       - python3-distutils 
       - python-distutils-extra
-      - python3.6
-      - python3.6-dev
       - python3-pip
-      - python3.6-venv
     build-environment:
       - CUDNN_VERSION: "8.1.0.77"
       - TF_TENSORRT_VERSION: "7.2.2"
       - CUDA: "11.2"
+      - OLD_CUDA: "11.1"      
+      - CUDA_LIB: "11-2"
       - LD_LIBRARY_PATH: "/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/cuda/lib64/stubs:/usr/include/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
       - BAZEL_VERSION: 3.7.2
       - CI_BUILD_PYTHON: python
@@ -87,26 +69,91 @@ parts:
       - TF_CUDNN_VERSION: "8"
       - TMP: /tmp
       - TF_SERVING_BUILD_OPTIONS: "--config=release"
-
     override-build: |
       set -xe
+
+      curl -sL "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub" | apt-key add -
+      echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /" > /etc/apt/sources.list.d/cuda.list
+      apt-get -yq update
+      
+      apt-get install -yq --no-install-recommends \
+        cuda-command-line-tools-${CUDA_LIB} \
+        libcublas-${CUDA_LIB} \
+        libcublas-dev-${CUDA_LIB} \
+        cuda-nvrtc-${CUDA_LIB} \
+        cuda-nvrtc-dev-${CUDA_LIB} \
+        cuda-nvprune-${CUDA_LIB} \
+        cuda-cudart-dev-${CUDA_LIB} \
+        libcufft-dev-${CUDA_LIB} \
+        libcurand-dev-${CUDA_LIB} \
+        libcusolver-dev-${CUDA_LIB} \
+        libcusparse-dev-${CUDA_LIB} \
+        libfreetype6-dev \
+        libtool \
+        libcudnn8=8.1.0.77-1+cuda${CUDA} \
+        libcudnn8-dev=8.1.0.77-1+cuda${CUDA} \
+        libcurl3-dev \
+        libzmq3-dev
+
+      apt-get clean
+      rm -rf /var/lib/apt/lists/*
+
+      # Install python3.6
+      echo "deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa.list
+
+      apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776
+
+      apt-get update
+      apt-get install -yq python3.6 python3.6-dev python3.6-venv
+
+      apt-get clean
+      rm -rf /var/lib/apt/lists/*
+
+      # create Nvidia/CUDA directories
+      mkdir -p "${CRAFT_PART_INSTALL}/usr/local" "${CRAFT_PART_INSTALL}/usr/local/bin"
+
+      # copy CUDA directories
+      cp -rp /usr/local/cuda-${CUDA} ${CRAFT_PART_INSTALL}/usr/local
+      ln -sf /usr/local/cuda-${CUDA} ${CRAFT_PART_INSTALL}/usr/local/cuda
+
+      # tensorflow fix - wrong libcuda lib path (+ reconfigure dynamic linker run-time bindings)
+      # ln -s /usr/local/cuda/lib64/stubs/libcuda.so ${CRAFT_PART_INSTALL}/usr/local/cuda/lib64/stubs/libcuda.so.1
+      # echo "/usr/local/cuda/lib64/stubs" > /etc/ld.so.conf.d/z-cuda-stubs.conf
+      # ldconfig
+
+      # copy CUDA config
+      # mkdir -p ${CRAFT_PART_INSTALL}/etc/ld.so.conf.d/
+      # cp -r /etc/ld.so.conf.d/z-cuda-stubs.conf ${CRAFT_PART_INSTALL}/etc/ld.so.conf.d/z-cuda-stubs.conf
+
+      # tensorflow fix - wrong libcusolver lib path
+      # https://github.com/tensorflow/tensorflow/issues/43947#issuecomment-748273679
+      # ln -s /usr/local/cuda-${CUDA}/targets/x86_64-linux/lib/libcusolver.so.11 ${CRAFT_PART_INSTALL}/usr/local/cuda-${CUDA}/targets/x86_64-linux/lib/libcusolver.so.10
+
+      # tensorflow fix - some tensorflow tools expect a `python` binary
+      # ln -s /usr/local/bin/python3 ${CRAFT_PART_INSTALL}/usr/local/bin/python
 
       find /usr/local/cuda-11.2/lib64/ -type f -name 'lib*_static.a' -not -name 'libcudart_static.a' -delete
       rm /usr/lib/x86_64-linux-gnu/libcudnn_static_v8.a
 
-      apt-get update && \
+      # install - other nvidia stuff
+      curl -sL "https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/7fa2af80.pub" | apt-key add -
+      echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
+      echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
+      apt-get -yq update
+
       apt-get install -y --no-install-recommends libnvinfer7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-      libnvinfer-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-      libnvinfer-plugin-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-      libnvinfer-plugin7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-      libnvonnxparsers7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-      libnvparsers7=${TF_TENSORRT_VERSION}-1+cuda11.1\
-      libnvonnxparsers-dev=${TF_TENSORRT_VERSION}-1+cuda11.1 \
-      libnvparsers-dev=${TF_TENSORRT_VERSION}-1+cuda11.1
+      libnvinfer-dev=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
+      libnvinfer-plugin-dev=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
+      libnvinfer-plugin7=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
+      libnvonnxparsers7=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
+      libnvparsers7=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA}\
+      libnvonnxparsers-dev=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
+      libnvparsers-dev=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA}
+      
       apt-get clean
       rm -rf /var/lib/apt/lists/*
-
-      python3.6 -m pip install pip --upgrade
+      
+      python3.6 -m pip install pip --upgrade      
 
       update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6
       update-alternatives --install /usr/bin/python python /usr/bin/python3.6
@@ -176,9 +223,4 @@ parts:
       # Clean build
       bazel clean --expunge --color=yes
       rm -rf /root/.cache      
-      
-    override-stage: |
-      mkdir -p $CRAFT_PART_INSTALL/usr/bin/
-      exit 1
-      
-    
+
