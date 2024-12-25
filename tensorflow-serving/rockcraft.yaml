@@ -155,8 +155,8 @@ parts:
       
       python3.6 -m pip install pip --upgrade      
 
-      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6
-      update-alternatives --install /usr/bin/python python /usr/bin/python3.6
+      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 0
+      update-alternatives --install /usr/bin/python python /usr/bin/python3.6 0
       
       curl -fSsL -O "https://bootstrap.pypa.io/get-pip.py"
 
