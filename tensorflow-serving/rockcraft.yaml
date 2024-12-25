@@ -109,6 +109,9 @@ parts:
       apt-get clean
       rm -rf /var/lib/apt/lists/*
 
+      find /usr/local/cuda-11.2/lib64/ -type f -name 'lib*_static.a' -not -name 'libcudart_static.a' -delete
+      rm /usr/lib/x86_64-linux-gnu/libcudnn_static_v8.a
+
       # create Nvidia/CUDA directories
       mkdir -p "${CRAFT_PART_INSTALL}/usr/local" "${CRAFT_PART_INSTALL}/usr/local/bin"
 
@@ -132,15 +135,13 @@ parts:
       # tensorflow fix - some tensorflow tools expect a `python` binary
       # ln -s /usr/local/bin/python3 ${CRAFT_PART_INSTALL}/usr/local/bin/python
 
-      find /usr/local/cuda-11.2/lib64/ -type f -name 'lib*_static.a' -not -name 'libcudart_static.a' -delete
-      rm /usr/lib/x86_64-linux-gnu/libcudnn_static_v8.a
-
       # install - other nvidia stuff
       curl -sL "https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/7fa2af80.pub" | apt-key add -
       echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
       echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
       apt-get -yq update
 
+      # NOTE: libnvinfer uses cuda11.1 versions
       apt-get install -y --no-install-recommends libnvinfer7=${TF_TENSORRT_VERSION}-1+cuda11.1 \
       libnvinfer-dev=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
       libnvinfer-plugin-dev=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
@@ -193,10 +194,10 @@ parts:
       rm -f /bazel/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh
 
       # Fix paths so that CUDNN can be found: https://github.com/tensorflow/tensorflow/issues/8264
-      mkdir /usr/lib/x86_64-linux-gnu/include/
-      ln -s /usr/include/cudnn.h /usr/local/cuda/include/cudnn.h
-      ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so /usr/local/cuda/lib64/libcudnn.so
-      ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so.${TF_CUDNN_VERSION} /usr/local/cuda/lib64/libcudnn.so.${TF_CUDNN_VERSION}
+      mkdir ${CRAFT_PART_INSTALL}/usr/lib/x86_64-linux-gnu/include/
+      ln -s /usr/include/cudnn.h ${CRAFT_PART_INSTALL}/usr/local/cuda/include/cudnn.h
+      ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so ${CRAFT_PART_INSTALL}/usr/local/cuda/lib64/libcudnn.so
+      ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so.${TF_CUDNN_VERSION} ${CRAFT_PART_INSTALL}/usr/local/cuda/lib64/libcudnn.so.${TF_CUDNN_VERSION}
 
       export TF_NCCL_VERSION=
 
