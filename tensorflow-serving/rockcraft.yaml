@@ -146,7 +146,7 @@ parts:
       libnvinfer-plugin-dev=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
       libnvinfer-plugin7=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
       libnvonnxparsers7=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
-      libnvparsers7=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA}\
+      libnvparsers7=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
       libnvonnxparsers-dev=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
       libnvparsers-dev=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA}
       
