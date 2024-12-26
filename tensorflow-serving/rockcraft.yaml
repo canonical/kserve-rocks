@@ -94,7 +94,7 @@ parts:
         libcudnn8-dev=8.1.0.77-1+cuda${CUDA} \
         libcurl3-dev \
         libzmq3-dev \
-	cuda-11.2
+	cuda-11-2
 
       apt-get clean
       rm -rf /var/lib/apt/lists/*
