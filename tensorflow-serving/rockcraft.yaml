@@ -203,7 +203,7 @@ parts:
 
       export TF_NCCL_VERSION=
 
-      cd /tensorflow_serving
+      cd ./tensorflow_serving
 
       export TF_SERVING_BAZEL_OPTIONS=""
 
