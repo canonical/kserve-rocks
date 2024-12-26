@@ -153,6 +153,8 @@ parts:
       
       apt-get clean
       rm -rf /var/lib/apt/lists/*
+
+      # --- CUDA install END ---
       
       python3.6 -m pip install pip --upgrade      
 
@@ -194,10 +196,10 @@ parts:
       rm -f /bazel/bazel-$BAZEL_VERSION-installer-linux-x86_64.sh
 
       # Fix paths so that CUDNN can be found: https://github.com/tensorflow/tensorflow/issues/8264
-      mkdir ${CRAFT_PART_INSTALL}/usr/lib/x86_64-linux-gnu/include/
-      ln -s /usr/include/cudnn.h ${CRAFT_PART_INSTALL}/usr/local/cuda/include/cudnn.h
-      ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so ${CRAFT_PART_INSTALL}/usr/local/cuda/lib64/libcudnn.so
-      ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so.${TF_CUDNN_VERSION} ${CRAFT_PART_INSTALL}/usr/local/cuda/lib64/libcudnn.so.${TF_CUDNN_VERSION}
+      mkdir /usr/lib/x86_64-linux-gnu/include/
+      ln -s /usr/include/cudnn.h /usr/local/cuda-${CUDA}/include/cudnn.h
+      ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so /usr/local/cuda-${CUDA}/lib64/libcudnn.so
+      ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so.${TF_CUDNN_VERSION} /usr/local/cuda-${CUDA}/lib64/libcudnn.so.${TF_CUDNN_VERSION}
 
       export TF_NCCL_VERSION=
 
@@ -205,8 +207,8 @@ parts:
 
       export TF_SERVING_BAZEL_OPTIONS=""
 
-      ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1
-      export LD_LIBRARY_PATH=/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH}
+      ln -s /usr/local/cuda-${CUDA}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA}/lib64/stubs/libcuda.so.1
+      export LD_LIBRARY_PATH=/usr/local/cuda-${CUDA}/lib64/stubs:${LD_LIBRARY_PATH}
 
       bazel build --color=yes --curses=yes --config=cuda --copt="-fPIC"\
       ${TF_SERVING_BAZEL_OPTIONS} \
