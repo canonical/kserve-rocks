@@ -225,6 +225,9 @@ parts:
 
       rm /usr/local/cuda/lib64/stubs/libcuda.so.1
 
+      # Patch for deprecated python tensorflow-gpu package
+      sed -i '49,52d' tensorflow_serving/tools/pip_package/setup.py
+
       bazel build --color=yes --curses=yes \
       ${TF_SERVING_BAZEL_OPTIONS} \
       --verbose_failures \
