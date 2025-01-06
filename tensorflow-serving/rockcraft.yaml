@@ -75,6 +75,7 @@ parts:
       - TF_SERVING_BUILD_OPTIONS: "--config=release"
     stage-packages:
       - ca-certificates
+      - curl      
     override-build: |
       set -xe
 
