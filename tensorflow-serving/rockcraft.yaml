@@ -279,6 +279,9 @@ parts:
       --model_name=${MODEL_NAME} --model_base_path=${MODEL_BASE_PATH}/${MODEL_NAME} \
       "$@"' > ${CRAFT_PART_INSTALL}/usr/bin/tf_serving_entrypoint.sh
 
-      chmod +x ${CRAFT_PART_INSTALL}/usr/bin/tf_serving_entrypoint.sh
+    override-prime: |
+      # copy all artifacts
+      cp -r ${CRAFT_STAGE}/usr/bin/tf_serving_entrypoint.sh /usr/bin/tf_serving_entrypoint.sh
 
+      chmod +x /usr/bin/tf_serving_entrypoint.sh
 
