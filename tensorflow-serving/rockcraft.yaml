@@ -57,14 +57,6 @@ parts:
       - python3-distutils 
       - python-distutils-extra
       - python3-pip
-    stage-packages:
-      - ca-certificates
-    stage-environment:
-      - CUDA_LIB: "11-2"
-      - CUDA: "11.2"
-      - OLD_CUDA: "11.1"
-      - TF_TENSORRT_VERSION: "7.2.2"
-      - CUDNN_VERSION: "8.1.0.77"   
     build-environment:
       - CUDNN_VERSION: "8.1.0.77"
       - TF_TENSORRT_VERSION: "7.2.2"
@@ -81,6 +73,14 @@ parts:
       - TF_CUDNN_VERSION: "8"
       - TMP: /tmp
       - TF_SERVING_BUILD_OPTIONS: "--config=release"
+    stage-packages:
+      - ca-certificates
+    stage-environment:
+      - CUDA_LIB: "11-2"
+      - CUDA: "11.2"
+      - OLD_CUDA: "11.1"
+      - TF_TENSORRT_VERSION: "7.2.2"
+      - CUDNN_VERSION: "8.1.0.77"      
     override-build: |
       set -xe
 
