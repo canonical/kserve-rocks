@@ -118,7 +118,7 @@ parts:
       rm -rf /var/lib/apt/lists/*
 
       find /usr/local/cuda-11.2/lib64/ -type f -name 'lib*_static.a' -not -name 'libcudart_static.a' -delete
-      rm /usr/lib/x86_64-linux-gnu/libcudnn_static_v8.a
+      rm -f /usr/lib/x86_64-linux-gnu/libcudnn_static_v8.a
 
       # create Nvidia/CUDA directories
       mkdir -p "${CRAFT_PART_INSTALL}/usr/local" "${CRAFT_PART_INSTALL}/usr/local/bin"
@@ -173,7 +173,7 @@ parts:
 
       python3 get-pip.py
 
-      rm get-pip.py
+      rm -f get-pip.py
 
       pip3 --no-cache-dir install \
       future>=0.17.1 \
@@ -224,7 +224,7 @@ parts:
 
       cp bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server ${CRAFT_PART_INSTALL}/usr/bin/
 
-      rm /usr/local/cuda/lib64/stubs/libcuda.so.1
+      rm -f /usr/local/cuda/lib64/stubs/libcuda.so.1
 
       # Patch for deprecated python tensorflow-gpu package
       sed -i '49,52d' tensorflow_serving/tools/pip_package/setup.py
@@ -246,11 +246,13 @@ parts:
       bazel clean --expunge --color=yes
       rm -rf /root/.cache
 
-    override-stage:
+    override-stage: |
       set -xe
 
       curl -sL "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub" | apt-key add -
+      
       echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /" > /etc/apt/sources.list.d/cuda.list
+      
       apt-get -yq update
       
       apt-get install -yq --no-install-recommends \
