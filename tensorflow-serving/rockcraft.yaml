@@ -256,13 +256,13 @@ parts:
       apt-get -yq update
       
       apt-get install -yq --no-install-recommends \
-        cuda-command-line-tools-${CUDA_LIB} \ +
-        libcublas-${CUDA_LIB} \ +
-        libcublas-dev-${CUDA_LIB} \ +
-	libcufft-${CUDA_LIB} \ +
-        libcurand-${CUDA_LIB} \ +
-        libcusolver-${CUDA_LIB} \ +
-        libcusparse-${CUDA_LIB} \ +
+        cuda-command-line-tools-${CUDA_LIB} \
+        libcublas-${CUDA_LIB} \
+        libcublas-dev-${CUDA_LIB} \
+	libcufft-${CUDA_LIB} \
+        libcurand-${CUDA_LIB} \
+        libcusolver-${CUDA_LIB} \
+        libcusparse-${CUDA_LIB} \
         libcudnn8=${CUDNN_VERSION}-1+cuda${CUDA} \
         libgomp1 \
 	libnvinfer7=${TF_TENSORRT_VERSION}-1+cuda${OLD_CUDA} \
