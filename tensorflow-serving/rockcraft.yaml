@@ -204,13 +204,10 @@ parts:
 
       export TF_NCCL_VERSION=
 
-      cd ./tensorflow_serving
-
       export TF_SERVING_BAZEL_OPTIONS=""
 
       ln -s /usr/local/cuda-${CUDA}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA}/lib64/stubs/libcuda.so.1
       
-      LD_LIBRARY_PATH=/usr/local/cuda-${CUDA}/lib64/stubs:${LD_LIBRARY_PATH} \
       bazel build --color=yes --curses=yes --config=cuda --copt="-fPIC" \
       ${TF_SERVING_BAZEL_OPTIONS} \
       --verbose_failures \
