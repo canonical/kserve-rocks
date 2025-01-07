@@ -1,9 +1,10 @@
+# Based on https://github.com/tensorflow/serving/blob/master/tensorflow_serving/tools/docker/Dockerfile.gpu
 name: tensorflow-serving
 summary: TensorFlow model server
 description: Test
 version: v2.6.2
 license: Apache-2.0
-base: ubuntu@20.04
+base: ubuntu@22.04
 run-user: _daemon_
 platforms:
   amd64:
@@ -32,7 +33,7 @@ parts:
       dpkg-query -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
       
-  cuda-build:
+  tf-serving:
     plugin: nil
     source: https://github.com/tensorflow/serving
     source-type: git
