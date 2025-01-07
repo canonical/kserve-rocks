@@ -281,7 +281,7 @@ parts:
 
     override-prime: |
       # copy all artifacts
-      cp -r ${CRAFT_STAGE}/usr/bin/tf_serving_entrypoint.sh /usr/bin/tf_serving_entrypoint.sh
+      cp -r ${CRAFT_PART_INSTALL}/usr/bin/tf_serving_entrypoint.sh /usr/bin/tf_serving_entrypoint.sh
 
       chmod +x /usr/bin/tf_serving_entrypoint.sh
 
