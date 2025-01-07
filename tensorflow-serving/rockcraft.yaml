@@ -4,7 +4,7 @@ summary: TensorFlow model server
 description: Test
 version: v2.6.2
 license: Apache-2.0
-base: ubuntu@22.04
+base: ubuntu@20.04
 run-user: _daemon_
 platforms:
   amd64:
@@ -48,7 +48,7 @@ parts:
       - openjdk-8-jdk
       - openjdk-8-jre-headless 
       - pkg-config 
-      #- python-dev 
+      - python-dev 
       - software-properties-common 
       - swig 
       - unzip 
@@ -56,7 +56,7 @@ parts:
       - zip 
       - zlib1g-dev 
       - python3-distutils 
-      #- python-distutils-extra
+      - python-distutils-extra
       - python3-pip
     build-environment:
       - CUDNN_VERSION: "8.1.0.77"
