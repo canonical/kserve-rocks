@@ -56,7 +56,7 @@ parts:
       - zip 
       - zlib1g-dev 
       - python3-distutils 
-      - python-distutils-extra
+      #- python-distutils-extra
       - python3-pip
     build-environment:
       - CUDNN_VERSION: "8.1.0.77"
