@@ -238,7 +238,7 @@ parts:
       bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package \
       /tmp/pip
 
-      mkdir -p ${CRAFT_PART_INSTALL}/models
+      mkdir -p ${CRAFT_PART_INSTALL}/models/model
       
       pip --no-cache-dir install --upgrade /tmp/pip/tensorflow_serving_api_gpu-*.whl
       
