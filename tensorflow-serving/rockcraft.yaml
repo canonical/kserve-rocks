@@ -273,6 +273,7 @@ parts:
       rm -rf /var/lib/apt/lists/*
       
       mkdir -p /models
+      mkdir -p ${CRAFT_PART_SRC}/usr/bin/
 
       echo '#!/bin/bash \n\n\
       tensorflow_model_server --port=8500 --rest_api_port=8501 \
