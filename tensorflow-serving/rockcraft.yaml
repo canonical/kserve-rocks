@@ -128,22 +128,6 @@ parts:
       cp -rp /usr/local/cuda-${CUDA} ${CRAFT_PART_INSTALL}/usr/local
       ln -sf /usr/local/cuda-${CUDA} ${CRAFT_PART_INSTALL}/usr/local/cuda
 
-      # tensorflow fix - wrong libcuda lib path (+ reconfigure dynamic linker run-time bindings)
-      # ln -s /usr/local/cuda/lib64/stubs/libcuda.so ${CRAFT_PART_INSTALL}/usr/local/cuda/lib64/stubs/libcuda.so.1
-      # echo "/usr/local/cuda/lib64/stubs" > /etc/ld.so.conf.d/z-cuda-stubs.conf
-      # ldconfig
-
-      # copy CUDA config
-      # mkdir -p ${CRAFT_PART_INSTALL}/etc/ld.so.conf.d/
-      # cp -r /etc/ld.so.conf.d/z-cuda-stubs.conf ${CRAFT_PART_INSTALL}/etc/ld.so.conf.d/z-cuda-stubs.conf
-
-      # tensorflow fix - wrong libcusolver lib path
-      # https://github.com/tensorflow/tensorflow/issues/43947#issuecomment-748273679
-      # ln -s /usr/local/cuda-${CUDA}/targets/x86_64-linux/lib/libcusolver.so.11 ${CRAFT_PART_INSTALL}/usr/local/cuda-${CUDA}/targets/x86_64-linux/lib/libcusolver.so.10
-
-      # tensorflow fix - some tensorflow tools expect a `python` binary
-      # ln -s /usr/local/bin/python3 ${CRAFT_PART_INSTALL}/usr/local/bin/python
-
       # install - other nvidia stuff
       curl -sL "https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64/7fa2af80.pub" | apt-key add -
       echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
