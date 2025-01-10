@@ -9,7 +9,7 @@ summary: TorchServe is a flexible and easy to use tool for serving and scaling P
 description: "TorchServe"
 version: "0.9.0"
 license: Apache-2.0
-base: ubuntu@20.04
+base: ubuntu@22.04
 platforms:
     amd64:
 run-user: _daemon_
