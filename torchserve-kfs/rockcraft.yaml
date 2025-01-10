@@ -87,7 +87,7 @@ parts:
       mkdir ${CRAFT_PART_INSTALL}/home/model-server/model-store
 
       cp -r ${CRAFT_PART_SRC}/venv ${CRAFT_PART_INSTALL}/home/venv
-      cp -r ${CRAFT_PART_SRC}/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
+      cp -r ${CRAFT_PART_SRC}/docker/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
 
   # not-root user for this rock should be 'model-server'
   non-root-user:
