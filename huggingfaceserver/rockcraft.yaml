@@ -9,13 +9,6 @@ version: "0.13.0"
 license: Apache-2.0
 base: ubuntu@22.04
 run-user: _daemon_
-environment: 
-  HF_HOME: "/tmp/huggingface"
-  SAFETENSORS_FAST_GPU: "1"
-  HF_HUB_DISABLE_TELEMETRY: "1"
-  CUDA: "12.1"
-  PATH: "/usr/local/nvidia/bin:/usr/local/cuda/bin:$PATH"
-  LD_LIBRARY_PATH: "/usr/local/cuda/lib:/usr/local/cuda/lib64"
   
 platforms:
     amd64:
@@ -26,6 +19,13 @@ services:
     summary: "Huggingface server service"
     startup: enabled
     command: "python -m huggingfaceserver [ ]"
+    environment: 
+      HF_HOME: "/tmp/huggingface"
+      SAFETENSORS_FAST_GPU: "1"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      CUDA: "12.1"
+      PATH: "/usr/local/nvidia/bin:/usr/local/cuda/bin:$PATH"
+      LD_LIBRARY_PATH: "/usr/local/cuda/lib:/usr/local/cuda/lib64"    
 entrypoint-service: huggingfaceserver
 
 parts:
