@@ -1,0 +1,25 @@
+# Based on the following Dockerfiles:
+# https://github.com/pytorch/serve/blob/v0.9.0/docker/Dockerfile
+# https://github.com/pytorch/serve/blob/v0.9.0/kubernetes/kserve/Dockerfile
+#
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+# This rock is implemented with some atypical patterns due to the native of the upstream
+name: torchserve-kfs
+summary: TorchServe is a flexible and easy to use tool for serving and scaling PyTorch models in production.
+description: "TorchServe"
+version: "0.9.0"
+license: Apache-2.0
+base: ubuntu@20.04
+platforms:
+    amd64:
+run-user: _daemon_
+services:
+  torchserve:
+    override: replace
+    summary: "TorchServe service"
+    startup: enabled
+    command: "/usr/local/bin/dockerd-entrypoint.sh serve [ ]"
+    working-dir: /home/model-server
+    environment:
+      TEMP: "/home/model-server/tmp"
+entrypoint-service: torchserve
