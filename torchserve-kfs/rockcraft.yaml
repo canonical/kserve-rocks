@@ -46,10 +46,10 @@ parts:
       - curl
       - software-properties-common
     build-environment:
-      - PYTHON_VERSION: 3.9
-      - PYTHONUNBUFFERED: TRUE
-      - USE_CUDA: 1
-      - CUDA_VERSION: cu121
+      - PYTHON_VERSION: "3.9"
+      - PYTHONUNBUFFERED: "TRUE"
+      - USE_CUDA: "1"
+      - CUDA_VERSION: "cu121"
     override-build: |
       set -xe
 
