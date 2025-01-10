@@ -99,7 +99,6 @@ parts:
     override-prime: |
       craftctl default
       chown -R 584792:users home/model-server
-      chown -R 584792:users bin
       chown -R 584792:users home/venv
 
      
