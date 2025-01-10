@@ -20,6 +20,85 @@ services:
     startup: enabled
     command: "/usr/local/bin/dockerd-entrypoint.sh serve [ ]"
     working-dir: /home/model-server
+    user: model-server
+    working-dir: /home/model-server
     environment:
       TEMP: "/home/model-server/tmp"
+      PATH: "/home/venv/bin:$PATH"
 entrypoint-service: torchserve
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  torchserve-kfs:
+    plugin: nil
+    source: https://github.com/pytorch/serve
+    source-type: git
+    source-tag: v0.9.0
+    build-packages:
+      - ca-certificates
+      - git
+      - curl
+      - software-properties-common
+    build-environment:
+      - PYTHON_VERSION: 3.9
+      - PYTHONUNBUFFERED: TRUE
+      - USE_CUDA: 1
+      - CUDA_VERSION: cu121
+    override-build: |
+      set -xe
+
+      add-apt-repository -y ppa:deadsnakes/ppa
+      apt remove python-pip  python3-pip
+      
+      apt-get install --no-install-recommends -y \
+        g++ \
+        python3-distutils \
+        python$PYTHON_VERSION \
+        python$PYTHON_VERSION-dev \
+        python$PYTHON_VERSION-venv \
+        openjdk-17-jdk \
+        curl \
+        git
+
+      rm -rf /var/lib/apt/lists/*
+
+      python$PYTHON_VERSION -m venv ${CRAFT_PART_SRC}/venv
+
+      PATH="${CRAFT_PART_SRC}/venv/bin:$PATH"
+
+      python -m pip install -U pip setuptools
+
+      python ${CRAFT_PART_SRC}/ts_scripts/install_dependencies.py --cuda $CUDA_VERSION
+      
+      python -m pip install --no-cache-dir torchserve-nightly torch-model-archiver-nightly torch-workflow-archiver-nightly
+
+      cp ${CRAFT_PART_SRC}/docker/dockerd-entrypoint.sh ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
+      chmod +x ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
+
+      mkdir -p ${CRAFT_PART_INSTALL}/home/model-server/tmp
+      mkdir ${CRAFT_PART_INSTALL}/home/model-server/model-store
+
+      cp -r ${CRAFT_PART_SRC}/venv ${CRAFT_PART_INSTALL}/home/venv
+      cp -r ${CRAFT_PART_SRC}/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
+
+  # not-root user for this rock should be 'model-server'
+  non-root-user:
+    plugin: nil
+    after: [torchserve-kfs]
+    overlay-script: |
+      # Create a user in the $CRAFT_OVERLAY chroot
+      useradd -R $CRAFT_OVERLAY -M -s /bin/bash -N -u 1001 model-server
+    override-prime: |
+      craftctl default
+      chown -R 584792:users home/model-server
+      chown -R 584792:users bin
+      chown -R 584792:users home/venv
+
+     
