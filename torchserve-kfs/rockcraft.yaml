@@ -21,7 +21,6 @@ services:
     command: "/usr/local/bin/dockerd-entrypoint.sh serve [ ]"
     working-dir: /home/model-server
     user: model-server
-    working-dir: /home/model-server
     environment:
       TEMP: "/home/model-server/tmp"
       PATH: "/home/venv/bin:$PATH"
