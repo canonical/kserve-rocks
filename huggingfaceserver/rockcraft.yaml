@@ -46,12 +46,13 @@ parts:
     - python3.10  
     # Including python3-pip here means pip also gets primed for the final rock
     - python3-pip
+    - cuda-12-1
     override-build: |
       # Populate the build system's python environment with all packages needed for 
       # the server in the final rock
       
       # Setup poetry
-      pip install poetry==1.7.1
+      pip install poetry==1.7.1 vllm==0.4.2
       poetry config virtualenvs.create false 
 
       # Install the kserve package, this specific server package, and their dependencies.
