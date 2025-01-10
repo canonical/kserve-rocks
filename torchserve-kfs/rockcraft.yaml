@@ -82,6 +82,7 @@ parts:
       cp -r ${CRAFT_PART_SRC}/docker/dockerd-entrypoint.sh ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
       chmod +x ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
 
+      mkdir -p ${CRAFT_PART_INSTALL}/home/venv
       mkdir -p ${CRAFT_PART_INSTALL}/home/model-server/tmp
       mkdir ${CRAFT_PART_INSTALL}/home/model-server/model-store
 
