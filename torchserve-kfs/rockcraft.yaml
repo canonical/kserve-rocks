@@ -88,7 +88,7 @@ parts:
 
       cp -r ${CRAFT_PART_SRC}/venv ${CRAFT_PART_INSTALL}/home
       cp -r ${CRAFT_PART_SRC}/docker/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
-      cp ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-serve/kserve_wrapper
+      cp ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper
 
       python -m grpc_tools.protoc \
         --proto_path=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
