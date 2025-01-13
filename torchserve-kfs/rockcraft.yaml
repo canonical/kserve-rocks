@@ -45,6 +45,7 @@ parts:
       - git
       - curl
       - software-properties-common
+      - build-essential
     build-environment:
       - PYTHON_VERSION: "3.9"
       - PYTHONUNBUFFERED: "TRUE"
@@ -73,6 +74,7 @@ parts:
       PATH="${CRAFT_PART_SRC}/venv/bin:$PATH"
 
       python -m pip install -U pip setuptools
+      python -m pip install grpcio grpcio-tools
 
       python ${CRAFT_PART_SRC}/ts_scripts/install_dependencies.py --cuda $CUDA_VERSION
       
