@@ -82,12 +82,21 @@ parts:
       cp -r ${CRAFT_PART_SRC}/docker/dockerd-entrypoint.sh ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
       chmod +x ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
 
-      mkdir -p ${CRAFT_PART_INSTALL}/home/venv
       mkdir -p ${CRAFT_PART_INSTALL}/home/model-server/tmp
       mkdir ${CRAFT_PART_INSTALL}/home/model-server/model-store
+      mkdir ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper      
 
-      cp -r ${CRAFT_PART_SRC}/venv ${CRAFT_PART_INSTALL}/home/venv
+      cp -r ${CRAFT_PART_SRC}/venv ${CRAFT_PART_INSTALL}/home
       cp -r ${CRAFT_PART_SRC}/docker/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
+      cp -r ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-serve/kserve_wrapper
+
+      python -m grpc_tools.protoc \
+        --proto_path=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
+        --python_out=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
+        --grpc_python_out=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
+        ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
+        ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
+
 
   # not-root user for this rock should be 'model-server'
   non-root-user:
