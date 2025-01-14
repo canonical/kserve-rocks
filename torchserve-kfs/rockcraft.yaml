@@ -41,20 +41,22 @@ parts:
     source-type: git
     source-tag: v0.9.0
     overlay-script: |
+      craftctl default
       add-apt-repository -y ppa:deadsnakes/ppa
       apt-get -yq update
-    build-packages:
-      - ca-certificates
-      - git
-      - curl
-      - software-properties-common
-      - build-essential
+    overlay-packages:
       - g++ 
       - python3-distutils 
       - python3.9 
       - python3.9-dev 
       - python3.9-venv 
       - openjdk-17-jdk
+    build-packages:
+      - ca-certificates
+      - git
+      - curl
+      - software-properties-common
+      - build-essential
     build-environment:
       - PYTHON_VERSION: "3.9"
       - PYTHONUNBUFFERED: "TRUE"
