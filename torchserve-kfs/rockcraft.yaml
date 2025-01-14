@@ -64,7 +64,7 @@ parts:
         python$PYTHON_VERSION-dev \
         python$PYTHON_VERSION-venv \
         openjdk-17-jdk
-	
+
       rm -rf /var/lib/apt/lists/*
 
       python$PYTHON_VERSION -m venv ${CRAFT_PART_SRC}/venv --copies
