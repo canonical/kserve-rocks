@@ -82,8 +82,6 @@ parts:
       cp -r ${CRAFT_PART_SRC}/docker/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
       cp ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper
 
-    override-stage: |
-      set -xe
       export PATH=/home/venv/bin:$PATH      
       python3.9 -m venv home/venv
 
@@ -103,8 +101,7 @@ parts:
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
 
-    override-prime: |
-      craftctl default
+      ln -s /usr/bin/python3.9 $CRAFT_PART_INSTALL/usr/bin/python
 
   # not-root user for this rock should be 'model-server'
   non-root-user:
