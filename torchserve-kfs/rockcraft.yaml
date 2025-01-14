@@ -45,6 +45,11 @@ parts:
     source: https://github.com/pytorch/serve
     source-type: git
     source-tag: v0.9.0
+    overlay-packages:
+      - python3.9 
+      - python3.9-dev 
+      - python3.9-venv
+      - openjdk-17-jdk      
     build-packages:
       - ca-certificates
       - git
@@ -52,11 +57,7 @@ parts:
       - software-properties-common
       - build-essential
       - g++ 
-      - python3-distutils 
-      - python3.9 
-      - python3.9-dev 
-      - python3.9-venv 
-      - openjdk-17-jdk      
+      - python3-distutils
     build-environment:
       - PYTHON_VERSION: "3.9"
       - PYTHONUNBUFFERED: "TRUE"
