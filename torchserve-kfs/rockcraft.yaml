@@ -104,6 +104,7 @@ parts:
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
 
       override-prime: |
+        ls home/
         cp -r ${CRAFT_STAGE}/home/venv home/
         cp -r ${CRAFT_STAGE}/home/model-server home/
 
