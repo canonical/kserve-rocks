@@ -103,8 +103,8 @@ parts:
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
 
-      prime:
-        - "-*"
+    prime:
+      - "-*"
 
   # not-root user for this rock should be 'model-server'
   non-root-user:
