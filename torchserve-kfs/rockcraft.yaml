@@ -46,28 +46,25 @@ parts:
       - curl
       - software-properties-common
       - build-essential
+    overlay-script: |
+      add-apt-repository -y ppa:deadsnakes/ppa
+      apt-get -yq update
+    
     build-environment:
       - PYTHON_VERSION: "3.9"
       - PYTHONUNBUFFERED: "TRUE"
       - USE_CUDA: "1"
       - CUDA_VERSION: "cu121"
+      - g++ 
+      - python3-distutils 
+      - python3.9 
+      - python3.9-dev 
+      - python3.9-venv 
+      - openjdk-17-jdk
     override-build: |
       set -xe
 
-      add-apt-repository -y ppa:deadsnakes/ppa
       apt remove python-pip  python3-pip
-
-      apt-get -yq update
-      
-      apt-get install --no-install-recommends -y \
-        g++ \
-        python3-distutils \
-        python$PYTHON_VERSION \
-        python$PYTHON_VERSION-dev \
-        python$PYTHON_VERSION-venv \
-        openjdk-17-jdk
-
-      rm -rf /var/lib/apt/lists/*
 
       python$PYTHON_VERSION -m venv ${CRAFT_PART_SRC}/venv
 
