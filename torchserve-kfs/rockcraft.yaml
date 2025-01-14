@@ -27,10 +27,9 @@ services:
 entrypoint-service: torchserve
 
 package-repositories:
-  - types: [deb]
-    url: "http://ppa.launchpad.net/deadsnakes/ppa/ubuntu"
-    suites: ["jammy"]
-    components: ["main"]
+  - type: deb
+    ppa: ppa.launchpad.net/deadsnakes
+    priority: always
 
 parts:
   security-team-requirement:
