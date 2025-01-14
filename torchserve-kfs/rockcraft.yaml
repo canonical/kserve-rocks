@@ -105,8 +105,8 @@ parts:
 
       override-prime: |
         ls home/
-        cp -r ${CRAFT_STAGE}/home/venv home/
-        cp -r ${CRAFT_STAGE}/home/model-server home/
+        cp -r ${CRAFT_STAGE}/home/venv /home/
+        cp -r ${CRAFT_STAGE}/home/model-server /home/
 
   # not-root user for this rock should be 'model-server'
   non-root-user:
