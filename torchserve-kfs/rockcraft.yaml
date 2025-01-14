@@ -103,9 +103,9 @@ parts:
 
       cp -r home/venv ${CRAFT_PART_INSTALL}/home/venv
 
-      ln -s $CRAFT_PART_INSTALL/usr/bin/python home/venv/python3.9       
-      ln -s $CRAFT_PART_INSTALL/usr/bin/python3 home/venv/python3
-      ln -s $CRAFT_PART_INSTALL/usr/bin/python3.9 home/venv/python3.9
+      ln -s $CRAFT_PART_INSTALL/usr/bin/python ${CRAFT_PART_INSTALL}/home/venv/python3.9       
+      ln -s $CRAFT_PART_INSTALL/usr/bin/python3 ${CRAFT_PART_INSTALL}/home/venv/python3
+      ln -s $CRAFT_PART_INSTALL/usr/bin/python3.9 ${CRAFT_PART_INSTALL}/home/venv/python3.9
 
   # not-root user for this rock should be 'model-server'
   non-root-user:
