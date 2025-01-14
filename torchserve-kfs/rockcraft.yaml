@@ -27,8 +27,8 @@ services:
 entrypoint-service: torchserve
 
 package-repositories:
-  - type: deb
-    ppa: ppa.launchpad.net/deadsnakes
+  - type: apt
+    ppa: deadsnakes/ppa
     priority: always
 
 parts:
