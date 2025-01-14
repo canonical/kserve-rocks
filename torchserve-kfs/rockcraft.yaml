@@ -82,19 +82,30 @@ parts:
       cp -r ${CRAFT_PART_SRC}/docker/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
       cp ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper
 
-      python3.9 -m pip install -U pip setuptools
-      python3.9 -m pip install grpcio grpcio-tools
+      export PATH=/home/venv/bin:$PATH      
+      python3.9 -m venv home/venv
 
-      python3.9 ${CRAFT_PART_SRC}/ts_scripts/install_dependencies.py --cuda $CUDA_VERSION
+      source home/venv/bin/activate
+
+      python -m pip install -U pip setuptools
+      python -m pip install grpcio grpcio-tools
+
+      python ${CRAFT_PART_SRC}/ts_scripts/install_dependencies.py --cuda $CUDA_VERSION
       
-      python3.9 -m pip install --no-cache-dir torchserve-nightly torch-model-archiver-nightly torch-workflow-archiver-nightly
+      python -m pip install --no-cache-dir torchserve-nightly torch-model-archiver-nightly torch-workflow-archiver-nightly
 
-      python3.9 -m grpc_tools.protoc \
+      python -m grpc_tools.protoc \
         --proto_path=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
         --python_out=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
         --grpc_python_out=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
+
+      cp -r home/venv ${CRAFT_PART_INSTALL}/home/venv
+
+      ln -s $CRAFT_PART_INSTALL/usr/bin/python home/venv/python3.9       
+      ln -s $CRAFT_PART_INSTALL/usr/bin/python3 home/venv/python3
+      ln -s $CRAFT_PART_INSTALL/usr/bin/python3.9 home/venv/python3.9
 
   # not-root user for this rock should be 'model-server'
   non-root-user:
@@ -106,5 +117,6 @@ parts:
     override-prime: |
       craftctl default
       chown -R 584792:users home/model-server
+      chown -R 584792:users home/venv
 
      
