@@ -44,19 +44,18 @@ parts:
       add-apt-repository -y ppa:deadsnakes/ppa
       apt update -yq
       craftctl default
-    overlay-packages:
-      - g++ 
-      - python3-distutils 
-      - python3.9 
-      - python3.9-dev 
-      - python3.9-venv 
-      - openjdk-17-jdk
     build-packages:
       - ca-certificates
       - git
       - curl
       - software-properties-common
       - build-essential
+      - g++ 
+      - python3-distutils 
+      - python3.9 
+      - python3.9-dev 
+      - python3.9-venv 
+      - openjdk-17-jdk      
     build-environment:
       - PYTHON_VERSION: "3.9"
       - PYTHONUNBUFFERED: "TRUE"
