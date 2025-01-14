@@ -105,6 +105,7 @@ parts:
 
     override-prime: |
       ls ${CRAFT_STAGE}/home
+      ls ${CRAFT_PART_INSTALL}/home
       cp -rp ${CRAFT_STAGE}/home .
 
   # not-root user for this rock should be 'model-server'
