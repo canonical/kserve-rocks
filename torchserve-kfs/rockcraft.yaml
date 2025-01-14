@@ -26,6 +26,12 @@ services:
       PATH: "/home/venv/bin:$PATH"
 entrypoint-service: torchserve
 
+package-repositories:
+  - types: [deb]
+    url: "http://ppa.launchpad.net/deadsnakes/ppa/ubuntu"
+    suites: ["jammy"]
+    components: ["main"]
+
 parts:
   security-team-requirement:
     plugin: nil
@@ -40,10 +46,6 @@ parts:
     source: https://github.com/pytorch/serve
     source-type: git
     source-tag: v0.9.0
-    overlay-script: |
-      add-apt-repository -y ppa:deadsnakes/ppa
-      apt update -yq
-      craftctl default
     build-packages:
       - ca-certificates
       - git
@@ -63,9 +65,7 @@ parts:
       - CUDA_VERSION: "cu121"
     override-build: |
       set -xe
-
-      apt remove python-pip  python3-pip
-
+      
       python$PYTHON_VERSION -m venv ${CRAFT_PART_SRC}/venv
 
       PATH="${CRAFT_PART_SRC}/venv/bin:$PATH"
