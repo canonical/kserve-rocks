@@ -71,9 +71,9 @@ parts:
     override-build: |
       set -xe
       
-      python$PYTHON_VERSION -m venv ${CRAFT_PART_SRC}/venv
+      python$PYTHON_VERSION -m venv /home/venv
 
-      source ${CRAFT_PART_SRC}/venv/bin/activate
+      source /home/venv/bin/activate
 
       python -m pip install -U pip setuptools
       python -m pip install grpcio grpcio-tools
@@ -90,7 +90,7 @@ parts:
       mkdir ${CRAFT_PART_INSTALL}/home/model-server/model-store
       mkdir ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper      
 
-      cp -r ${CRAFT_PART_SRC}/venv ${CRAFT_PART_INSTALL}/home
+      cp -r /home/venv ${CRAFT_PART_INSTALL}/home
       cp -r ${CRAFT_PART_SRC}/docker/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
       cp ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper
 
