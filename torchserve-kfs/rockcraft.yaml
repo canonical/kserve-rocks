@@ -103,10 +103,6 @@ parts:
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
 
-    override-prime: |
-      cp -r ${CRAFT_STAGE}/home/venv home/venv
-      cp -r ${CRAFT_PART_INSTALL}/home/model-server home/model-server
-
   # not-root user for this rock should be 'model-server'
   non-root-user:
     plugin: nil
