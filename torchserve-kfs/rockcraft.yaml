@@ -102,7 +102,7 @@ parts:
         --grpc_python_out=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
-	
+
       override-prime: |
         cp -rp ${CRAFT_STAGE}/home .
 
