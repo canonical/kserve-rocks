@@ -73,7 +73,7 @@ parts:
       
       python$PYTHON_VERSION -m venv ${CRAFT_PART_SRC}/venv
 
-      PATH="${CRAFT_PART_SRC}/venv/bin:$PATH"
+      source ${CRAFT_PART_SRC}/venv/bin/activate
 
       python -m pip install -U pip setuptools
       python -m pip install grpcio grpcio-tools
