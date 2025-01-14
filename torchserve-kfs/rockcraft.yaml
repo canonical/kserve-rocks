@@ -41,9 +41,9 @@ parts:
     source-type: git
     source-tag: v0.9.0
     overlay-script: |
-      craftctl default
       add-apt-repository -y ppa:deadsnakes/ppa
-      apt-get -yq update
+      apt update -yq
+      craftctl default
     overlay-packages:
       - g++ 
       - python3-distutils 
