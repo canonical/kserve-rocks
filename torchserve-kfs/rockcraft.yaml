@@ -70,18 +70,7 @@ parts:
       - CUDA_VERSION: "cu121"
     override-build: |
       set -xe
-      export PATH=/home/venv/bin:$PATH      
-      python$PYTHON_VERSION -m venv /home/venv
-
-      source /home/venv/bin/activate
-
-      python -m pip install -U pip setuptools
-      python -m pip install grpcio grpcio-tools
-
-      python ${CRAFT_PART_SRC}/ts_scripts/install_dependencies.py --cuda $CUDA_VERSION
       
-      python -m pip install --no-cache-dir torchserve-nightly torch-model-archiver-nightly torch-workflow-archiver-nightly
-
       mkdir -p ${CRAFT_PART_INSTALL}/usr/local/bin/
       cp -r ${CRAFT_PART_SRC}/docker/dockerd-entrypoint.sh ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
       chmod +x ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
@@ -90,9 +79,22 @@ parts:
       mkdir ${CRAFT_PART_INSTALL}/home/model-server/model-store
       mkdir ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper      
 
-      cp -r /home/venv ${CRAFT_PART_INSTALL}/home
       cp -r ${CRAFT_PART_SRC}/docker/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
       cp ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper
+
+    override-stage: |
+      set -xe
+      export PATH=/home/venv/bin:$PATH      
+      python3.9 -m venv home/venv
+
+      source home/venv/bin/activate
+
+      python -m pip install -U pip setuptools
+      python -m pip install grpcio grpcio-tools
+
+      python ${CRAFT_PART_SRC}/ts_scripts/install_dependencies.py --cuda $CUDA_VERSION
+      
+      python -m pip install --no-cache-dir torchserve-nightly torch-model-archiver-nightly torch-workflow-archiver-nightly
 
       python -m grpc_tools.protoc \
         --proto_path=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
@@ -100,7 +102,9 @@ parts:
         --grpc_python_out=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
-      
+	
+      override-prime: |
+        cp -rp ${CRAFT_STAGE}/home .
 
 
   # not-root user for this rock should be 'model-server'
