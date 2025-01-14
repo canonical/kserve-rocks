@@ -40,27 +40,26 @@ parts:
     source: https://github.com/pytorch/serve
     source-type: git
     source-tag: v0.9.0
+    overlay-script: |
+      add-apt-repository -y ppa:deadsnakes/ppa
+      apt-get -yq update
     build-packages:
       - ca-certificates
       - git
       - curl
       - software-properties-common
       - build-essential
-    overlay-script: |
-      add-apt-repository -y ppa:deadsnakes/ppa
-      apt-get -yq update
-    
-    build-environment:
-      - PYTHON_VERSION: "3.9"
-      - PYTHONUNBUFFERED: "TRUE"
-      - USE_CUDA: "1"
-      - CUDA_VERSION: "cu121"
       - g++ 
       - python3-distutils 
       - python3.9 
       - python3.9-dev 
       - python3.9-venv 
       - openjdk-17-jdk
+    build-environment:
+      - PYTHON_VERSION: "3.9"
+      - PYTHONUNBUFFERED: "TRUE"
+      - USE_CUDA: "1"
+      - CUDA_VERSION: "cu121"
     override-build: |
       set -xe
 
