@@ -70,7 +70,7 @@ parts:
       - CUDA_VERSION: "cu121"
     override-build: |
       set -xe
-      
+      export PATH=/home/venv/bin:$PATH      
       python$PYTHON_VERSION -m venv /home/venv
 
       source /home/venv/bin/activate
