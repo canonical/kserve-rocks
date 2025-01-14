@@ -101,7 +101,7 @@ parts:
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
 
-      cp -rp home/venv ${CRAFT_PART_INSTALL}/
+      cp -r home/venv ${CRAFT_PART_INSTALL}/venv
 
       ln -s /usr/bin/python3.9 $CRAFT_PART_INSTALL/usr/bin/python
 
