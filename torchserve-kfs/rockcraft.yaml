@@ -40,6 +40,9 @@ parts:
     source: https://github.com/pytorch/serve
     source-type: git
     source-tag: v0.9.0
+    overlay-packages:
+      - python3-dev
+      - python3-distutils    
     build-packages:
       - ca-certificates
       - git
