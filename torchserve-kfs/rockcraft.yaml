@@ -40,15 +40,20 @@ parts:
     source: https://github.com/pytorch/serve
     source-type: git
     source-tag: v0.9.0
-    overlay-packages:
-      - python3-dev
-      - python3-distutils    
+    overlay-script: |
+      add-apt-repository -y ppa:deadsnakes/ppa    
     build-packages:
       - ca-certificates
       - git
+      - g++
       - curl
       - software-properties-common
       - build-essential
+      - python3-distutils
+      - python3.9
+      - python3.9-dev
+      - python3.9-venv
+      - openjdk-17-jdk
     build-environment:
       - PYTHON_VERSION: "3.9"
       - PYTHONUNBUFFERED: "TRUE"
@@ -56,20 +61,7 @@ parts:
       - CUDA_VERSION: "cu121"
     override-build: |
       set -xe
-
-      add-apt-repository -y ppa:deadsnakes/ppa
-      apt remove python-pip  python3-pip
       
-      apt-get install --no-install-recommends -y \
-        g++ \
-        python3-distutils \
-        python$PYTHON_VERSION \
-        python$PYTHON_VERSION-dev \
-        python$PYTHON_VERSION-venv \
-        openjdk-17-jdk
-
-      rm -rf /var/lib/apt/lists/*
-
       python$PYTHON_VERSION -m venv ${CRAFT_PART_SRC}/venv
 
       source ${CRAFT_PART_SRC}/venv/bin/activate
