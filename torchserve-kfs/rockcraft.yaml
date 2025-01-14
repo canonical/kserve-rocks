@@ -104,7 +104,8 @@ parts:
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
 
     override-prime: |
-      cp -rp ${CRAFT_STAGE}/home .
+      cp -rp ${CRAFT_STAGE}/home/venv home/venv
+      cp -rp ${CRAFT_STAGE}/home/model-server home/model-server
 
   # not-root user for this rock should be 'model-server'
   non-root-user:
