@@ -84,7 +84,7 @@ parts:
       cp ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper
 
       # export PATH=${CRAFT_PART_INSTALL}/home/venv/bin:$PATH      
-      python$PYTHON_VERSION -m venv ${CRAFT_PART_INSTALL}/home/venv 
+      /usr/bin/python${PYTHON_VERSION} -m venv ${CRAFT_PART_INSTALL}/home/venv 
 
       source ${CRAFT_PART_INSTALL}/home/venv/bin/activate
 
