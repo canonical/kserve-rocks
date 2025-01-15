@@ -6,7 +6,10 @@
 # This rock is implemented with some atypical patterns due to the native of the upstream
 name: torchserve-kfs
 summary: TorchServe is a flexible and easy to use tool for serving and scaling PyTorch models in production.
-description: "TorchServe"
+description: |
+  TorchServe is an open-source model serving framework designed for PyTorch models. 
+  It provides a scalable, production-ready environment to deploy machine learning models 
+  with features like multi-model serving, logging, metrics, and GPU acceleration. 
 version: "0.9.0"
 license: Apache-2.0
 base: ubuntu@22.04
@@ -83,7 +86,6 @@ parts:
       cp -r ${CRAFT_PART_SRC}/docker/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
       cp ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper
 
-      # export PATH=${CRAFT_PART_INSTALL}/home/venv/bin:$PATH      
       python$PYTHON_VERSION -m venv ${CRAFT_PART_INSTALL}/home/venv 
 
       source ${CRAFT_PART_INSTALL}/home/venv/bin/activate
@@ -99,6 +101,7 @@ parts:
       
       python -m pip install --no-cache-dir torchserve-nightly torch-model-archiver-nightly torch-workflow-archiver-nightly
 
+      # Fix build step veirtual venv shebangs
       find ${CRAFT_PART_INSTALL}/home/venv/bin -type f -exec sed -i "s|#!${CRAFT_PART_INSTALL}/home/venv/bin/python|#!/home/venv/bin/python|g" {} +
       
       python -m grpc_tools.protoc \
