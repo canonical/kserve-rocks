@@ -99,7 +99,8 @@ parts:
       
       python -m pip install --no-cache-dir torchserve-nightly torch-model-archiver-nightly torch-workflow-archiver-nightly
 
-      find ${CRAFT_PART_INSTALL}/home/venv/bin -type f -exec sed -i 's|#!/root/parts/install/home/venv/bin/python|#!/home/venv/bin/python|g' {} +
+      echo $CRAFT_PART_INSTALL
+      find ${CRAFT_PART_INSTALL}/home/venv/bin -type f -exec sed -i 's|#!${CRAFT_PART_INSTALL}/home/venv/bin/python|#!/home/venv/bin/python|g' {} +
       
       python -m grpc_tools.protoc \
         --proto_path=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
