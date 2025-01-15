@@ -106,7 +106,7 @@ parts:
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
 
-      find ${CRAFT_PART_INSTALL}/home/venv f -exec sed -i 's|#!${CRAFT_PART_INSTALL}/home/venv/bin|#!/home/venv/bin|g' {} +
+      find ${CRAFT_PART_INSTALL}/home/venv/bin f -exec sed -i 's|#!${CRAFT_PART_INSTALL}/home/venv/bin|#!/home/venv/bin|g' {} +
 
       #cp -r home/venv ${CRAFT_PART_INSTALL}/home/venv
 
