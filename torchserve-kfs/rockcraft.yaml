@@ -88,6 +88,10 @@ parts:
 
       source ${CRAFT_PART_INSTALL}/home/venv/bin/activate
 
+      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python
+      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python3
+      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python3.9
+
       python -m pip install -U pip setuptools
       python -m pip install grpcio grpcio-tools
 
@@ -101,10 +105,6 @@ parts:
         --grpc_python_out=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
-
-      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python
-      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python3
-      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python3.9
 
       #cp -r home/venv ${CRAFT_PART_INSTALL}/home/venv
 
