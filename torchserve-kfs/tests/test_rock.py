@@ -17,7 +17,6 @@ from charmed_kubeflow_chisme.rock import CheckRock
 @pytest.mark.abort_on_fail
 def test_rock():
     """Test rock."""
-    temp_dir, container_name = rock_test_env
     check_rock = CheckRock("rockcraft.yaml")
     rock_image = check_rock.get_name()
     rock_version = check_rock.get_version()
