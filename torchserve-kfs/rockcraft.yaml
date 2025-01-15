@@ -24,6 +24,7 @@ services:
     environment:
       TEMP: "/home/model-server/tmp"
       PATH: "/home/venv/bin:$PATH"
+      JAVA_HOME: "/usr/lib/jvm/java-1.17.0-openjdk-amd64"
 entrypoint-service: torchserve
 
 package-repositories:
@@ -83,7 +84,7 @@ parts:
       cp ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper
 
       # export PATH=${CRAFT_PART_INSTALL}/home/venv/bin:$PATH      
-      python$PYTHON_VERSION -m venv ${CRAFT_PART_INSTALL}/home/venv --copies
+      python$PYTHON_VERSION -m venv ${CRAFT_PART_INSTALL}/home/venv 
 
       source ${CRAFT_PART_INSTALL}/home/venv/bin/activate
 
@@ -100,6 +101,9 @@ parts:
         --grpc_python_out=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
         ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
+
+      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python
+      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python3
 
       #cp -r home/venv ${CRAFT_PART_INSTALL}/home/venv
 
