@@ -56,8 +56,10 @@ parts:
       - python3.10  
       # Including python3-pip here means pip also gets primed for the final rock
       - python3-pip
-      - cuda-12-1
+    stage-packages:
+      - cuda-12-1    
     build-packages:
+      - cuda-12-1
       - build-essential
       - libgomp1
     build-environment:
@@ -87,7 +89,7 @@ parts:
       # a symbolic link
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
       ln -s /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
-
+ 
   # Copy licenses
   third-party:
     plugin: nil
