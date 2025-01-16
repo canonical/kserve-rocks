@@ -52,17 +52,17 @@ parts:
     source: https://github.com/kserve/kserve.git
     source-subdir: python
     source-tag: v0.13.0
+    overlay-packages:
+      - python3.10  
+      # Including python3-pip here means pip also gets primed for the final rock
+      - python3-pip
+      - cuda-12-1
     build-packages:
       - build-essential
       - libgomp1
     build-environment:
       - CUDA: "12.1"
       - LD_LIBRARY_PATH: "/usr/local/cuda-12.1/lib:/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH"          
-    overlay-packages:
-    - python3.10  
-    # Including python3-pip here means pip also gets primed for the final rock
-    - python3-pip
-    - cuda-12.1
     override-build: |
       # Populate the build system's python environment with all packages needed for 
       # the server in the final rock
