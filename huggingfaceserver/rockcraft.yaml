@@ -59,7 +59,6 @@ parts:
     stage-packages:
       - cuda-12-1    
     build-packages:
-      - cuda-12-1
       - build-essential
       - libgomp1
     build-environment:
