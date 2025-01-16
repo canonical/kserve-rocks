@@ -36,7 +36,7 @@ package-repositories:
     formats: [deb]
     path: /
     key-id: EB693B3035CD5710E231E123A4B469963BF863CC
-    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/
+    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64
 
 parts:
   security-team-requirement:
@@ -56,7 +56,7 @@ parts:
       - python3.10  
       # Including python3-pip here means pip also gets primed for the final rock
       - python3-pip
-      - cuda-12.1
+      - cuda-12-1
     build-packages:
       - build-essential
       - libgomp1
