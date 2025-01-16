@@ -57,6 +57,7 @@ parts:
       - libgomp1
     build-environment:
       - CUDA: "12.1"
+      - LD_LIBRARY_PATH: "/usr/local/cuda-12.1/lib:/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH"          
     overlay-packages:
     - python3.10  
     # Including python3-pip here means pip also gets primed for the final rock
