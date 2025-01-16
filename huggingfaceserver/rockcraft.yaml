@@ -69,7 +69,7 @@ parts:
       # the server in the final rock
 
       # Setup poetry
-      pip install poetry==1.7.1 vllm==0.4.2
+      pip install --no-cache-dir poetry==1.7.1 vllm==0.4.2
       poetry config virtualenvs.create false 
 
       # Install the kserve package, this specific server package, and their dependencies.
@@ -88,6 +88,8 @@ parts:
       # a symbolic link
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
       ln -s /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
+
+      rm -rf /root/.cache
  
   # Copy licenses
   third-party:
