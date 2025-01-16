@@ -35,7 +35,8 @@ package-repositories:
   - type: apt
     formats: [deb]
     path: /
-    key-server: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub
+    key-server: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/
+    key-id: 3bf863cc
     url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/
 
 parts:
