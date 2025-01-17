@@ -61,6 +61,7 @@ parts:
     build-packages:
       - build-essential
       - libgomp1
+      - wget
     build-environment:
       - CUDA: "12.1"
       - LD_LIBRARY_PATH: "/usr/local/cuda-12.1/lib:/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH"
@@ -68,8 +69,11 @@ parts:
       # Populate the build system's python environment with all packages needed for 
       # the server in the final rock
 
-      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/uda-keyring_1.1-1_all.deb
-      sudo dpkg -i cuda-keyring_1.1-1_all.deb
+      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+      dpkg -i cuda-keyring_1.1-1_all.deb
+
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/local/deb-packages
+      cp cuda-keyring_1.1-1_all.deb ${CRAFT_PART_INSTALL}/usr/local/deb-packages/
 
       # Setup poetry
       pip install --no-cache-dir poetry==1.7.1 vllm==0.4.2
