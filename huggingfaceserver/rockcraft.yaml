@@ -57,13 +57,13 @@ parts:
       # Including python3-pip here means pip also gets primed for the final rock
       - python3-pip
     stage-packages:
-      - cuda-12-1    
+      - cuda-runtime-12-1    
     build-packages:
       - build-essential
       - libgomp1
     build-environment:
       - CUDA: "12.1"
-      - LD_LIBRARY_PATH: "/usr/local/cuda-12.1/lib:/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH"          
+      - LD_LIBRARY_PATH: "/usr/local/cuda-12.1/lib:/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH"
     override-build: |
       # Populate the build system's python environment with all packages needed for 
       # the server in the final rock
@@ -90,7 +90,11 @@ parts:
       ln -s /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
 
       rm -rf /root/.cache
- 
+      
+    override-stage: |
+      dpkg -l
+      craftclt default
+
   # Copy licenses
   third-party:
     plugin: nil
