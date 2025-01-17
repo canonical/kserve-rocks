@@ -71,7 +71,8 @@ parts:
 
       wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
       dpkg -i cuda-keyring_1.1-1_all.deb
-      apt-get install cuda-runtime-12-1
+      apt-get update -y
+      apt-get install cuda-runtime-12-1 -y
 
       mkdir -p ${CRAFT_PART_INSTALL}/usr/local/deb-packages
       cp cuda-keyring_1.1-1_all.deb ${CRAFT_PART_INSTALL}/usr/local/deb-packages/
