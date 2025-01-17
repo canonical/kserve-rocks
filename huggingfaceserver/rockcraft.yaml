@@ -50,11 +50,11 @@ parts:
   cuda:
     plugin: nil
     override-prime: |
-      craftctl default    
       wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
       dpkg -i cuda-keyring_1.1-1_all.deb
       apt-get update -y
       apt-get install cuda-runtime-12-1 -y
+      craftctl default    
       
   python:
     plugin: nil
