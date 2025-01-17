@@ -56,6 +56,7 @@ parts:
       - python3.10  
       # Including python3-pip here means pip also gets primed for the final rock
       - python3-pip
+    stage-packages:
       - cuda-runtime-12-1    
     build-packages:
       - build-essential
