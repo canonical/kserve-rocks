@@ -77,10 +77,7 @@ parts:
     override-build: |
       # Populate the build system's python environment with all packages needed for 
       # the server in the final rock
-
-      mkdir -p ${CRAFT_PART_INSTALL}/usr/local/deb-packages
-      cp cuda-keyring_1.1-1_all.deb ${CRAFT_PART_INSTALL}/usr/local/deb-packages/
-
+      
       # Setup poetry
       pip install --no-cache-dir poetry==1.7.1 vllm==0.4.2
       poetry config virtualenvs.create false 
