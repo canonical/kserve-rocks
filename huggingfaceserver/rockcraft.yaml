@@ -57,7 +57,7 @@ parts:
       # Including python3-pip here means pip also gets primed for the final rock
       - python3-pip
     stage-packages:
-      - cuda-toolkit-12-1
+      - cuda-runtime-12-1    
     build-packages:
       - build-essential
       - libgomp1
@@ -67,6 +67,9 @@ parts:
     override-build: |
       # Populate the build system's python environment with all packages needed for 
       # the server in the final rock
+
+      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/uda-keyring_1.1-1_all.deb
+      sudo dpkg -i cuda-keyring_1.1-1_all.deb
 
       # Setup poetry
       pip install --no-cache-dir poetry==1.7.1 vllm==0.4.2
