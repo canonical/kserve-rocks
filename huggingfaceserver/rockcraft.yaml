@@ -47,6 +47,15 @@ parts:
       dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
 
+  cuda:
+    plugin: nil
+    override-prime: |
+      craftctl default    
+      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+      dpkg -i cuda-keyring_1.1-1_all.deb
+      apt-get update -y
+      apt-get install cuda-runtime-12-1 -y
+      
   python:
     plugin: nil
     source: https://github.com/kserve/kserve.git
@@ -68,11 +77,6 @@ parts:
     override-build: |
       # Populate the build system's python environment with all packages needed for 
       # the server in the final rock
-
-      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-      dpkg -i cuda-keyring_1.1-1_all.deb
-      apt-get update -y
-      apt-get install cuda-runtime-12-1 -y
 
       mkdir -p ${CRAFT_PART_INSTALL}/usr/local/deb-packages
       cp cuda-keyring_1.1-1_all.deb ${CRAFT_PART_INSTALL}/usr/local/deb-packages/
