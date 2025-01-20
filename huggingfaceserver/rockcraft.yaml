@@ -57,16 +57,31 @@ parts:
       - CUDA: "12.1"
       - LD_LIBRARY_PATH: "/usr/local/cuda-12.1/lib:/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH"
     override-build: |
-      # Populate the build system's python environment with all packages needed for 
-      # the server in the final rock
-
+      # Add NVIDIA repository key and update the package list
       curl -sL "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub" | apt-key add -
       echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" > /etc/apt/sources.list.d/cuda.list
       apt-get -yq update
+    
+      # Install CUDA toolkit
       apt-get -yq install --no-install-recommends cuda-toolkit-12-1
+
+      # Copy cuda libs
+      cp - a /usr/local/cuda-12-1 $CRAFT_PART_INSTALL/usr/local/cuda-12-1
+    
+      # Copy dpkg and apt information to the final image
+      mkdir -p $CRAFT_PART_INSTALL/var/lib/dpkg
+      cp -a /var/lib/dpkg/* $CRAFT_PART_INSTALL/var/lib/dpkg/
+
+      mkdir -p $CRAFT_PART_INSTALL/var/lib/apt
+      cp -a /var/lib/apt/lists/* $CRAFT_PART_INSTALL/var/lib/apt/lists/
+    
+      mkdir -p $CRAFT_PART_INSTALL/etc/apt
+      cp -a /etc/apt/sources.list.d $CRAFT_PART_INSTALL/etc/apt/
+      cp -a /etc/apt/trusted.gpg* $CRAFT_PART_INSTALL/etc/apt/
+    
+      # Clean up the apt cache
       apt-get clean
       rm -rf /var/lib/apt/lists/*
-      exit 1
       
       # Setup poetry
       pip install --no-cache-dir poetry==1.7.1 vllm==0.4.2
