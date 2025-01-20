@@ -31,12 +31,12 @@ services:
       LD_LIBRARY_PATH: "/usr/local/cuda-12.1/lib:/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH"    
 entrypoint-service: huggingfaceserver
 
-#package-repositories:
-#  - type: apt
-#    formats: [deb]
-#    path: /
-#    key-id: EB693B3035CD5710E231E123A4B469963BF863CC
-#    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64
+package-repositories:
+  - type: apt
+    formats: [deb]
+    path: /
+    key-id: EB693B3035CD5710E231E123A4B469963BF863CC
+    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64
 
 parts:
   security-team-requirement:
@@ -56,8 +56,11 @@ parts:
       - python3.10  
       # Including python3-pip here means pip also gets primed for the final rock
       - python3-pip
-    #stage-packages:
-    #  - cuda-runtime-12-1    
+    stage-packages:
+      - cuda-runtime-12-1
+      - cuda-compat-12-1
+      - cuda-cudart-12-1
+      - cuda-toolkit-12-1
     build-packages:
       - build-essential
       - libgomp1
@@ -68,13 +71,6 @@ parts:
     override-build: |
       # Populate the build system's python environment with all packages needed for 
       # the server in the final rock
-
-      curl -sL "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub" | apt-key add -
-      echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" > /etc/apt/sources.list.d/cuda.list
-      apt-get -yq update
-      apt-get -yq install --no-install-recommends cuda-compat-12-1 cuda-cudart-12-1 cuda-toolkit-12-1
-      apt-get clean
-      rm -rf /var/lib/apt/lists/*
       
       # Setup poetry
       pip install --no-cache-dir poetry==1.7.1 vllm==0.4.2
