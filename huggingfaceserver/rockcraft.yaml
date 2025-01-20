@@ -67,7 +67,7 @@ parts:
 
       # Copy cuda libs
       mkdir -p $CRAFT_PART_INSTALL/usr/local
-      cp -a /usr/local/cuda-12-1 $CRAFT_PART_INSTALL/usr/local/
+      cp -a /usr/local/cuda-12.1 $CRAFT_PART_INSTALL/usr/local/
     
       # Copy dpkg and apt information to the final image
       mkdir -p $CRAFT_PART_INSTALL/var/lib/dpkg
