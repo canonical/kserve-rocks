@@ -63,7 +63,7 @@ parts:
       apt-get -yq update
     
       # Install CUDA toolkit
-      apt-get -yq install --no-install-recommends cuda-runtime-12-1
+      apt-get -yq install --no-install-recommends cuda-keyring cuda-runtime-12-1 cuda-compat-12-1 
 
       # Copy cuda libs
       mkdir -p $CRAFT_PART_INSTALL/usr/local
