@@ -47,17 +47,6 @@ parts:
       dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
 
-  cuda:
-    plugin: nil
-    override-prime: |
-      craftctl default    
-      curl -sL "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub" | apt-key add -
-      echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" > /etc/apt/sources.list.d/cuda.list
-      apt-get -yq update
-      apt-get -yq install --no-install-recommends cuda-compat-12-1 cuda-cudart-12-1 cuda-toolkit-12-1
-      apt-get clean
-      rm -rf /var/lib/apt/lists/*
-      
   python:
     plugin: nil
     source: https://github.com/kserve/kserve.git
@@ -100,6 +89,13 @@ parts:
       # a symbolic link
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
       ln -s /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
+
+      curl -sL "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub" | apt-key add -
+      echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" > /etc/apt/sources.list.d/cuda.list
+      apt-get -yq update
+      apt-get -yq install --no-install-recommends cuda-compat-12-1 cuda-cudart-12-1 cuda-toolkit-12-1
+      apt-get clean
+      rm -rf /var/lib/apt/lists/*
 
       rm -rf /root/.cache
 
