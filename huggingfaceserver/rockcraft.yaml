@@ -58,8 +58,8 @@ parts:
       - LD_LIBRARY_PATH: "/usr/local/cuda-12.1/lib:/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH"
     override-build: |
       # Add NVIDIA repository key and update the package list
-      curl -sL "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub" | apt-key add -
-      echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" > /etc/apt/sources.list.d/cuda.list
+      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+      dpkg -i cuda-keyring_1.1-1_all.deb
       apt-get -yq update
     
       # Install CUDA toolkit
