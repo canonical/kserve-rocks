@@ -59,11 +59,11 @@ parts:
     override-build: |
       # Add NVIDIA repository key and update the package list
       wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-      dpkg -i cuda-keyring_1.1-1_all.deb
+      dpkg -i cuda-keyring_1.0-1_all.deb
       apt-get -yq update
     
       # Install CUDA toolkit
-      apt-get -yq install --no-install-recommends cuda-keyring cuda-compat-12-1 cuda-cudart-12-1 cuda-toolkit-12-1-config-common cuda-toolkit-12-config-common cuda-toolkit-config-common 
+      apt-get -yq install --no-install-recommends cuda-keyring=1.0-1 cuda-compat-12-1=530.30.02-1 cuda-cudart-12-1=12.1.55-1 cuda-toolkit-12-1-config-common=12.1.105-1 cuda-toolkit-12-config-common=12.3.52-1 cuda-toolkit-config-common=12.3.52-1 
 
       # Copy cuda libs
       mkdir -p $CRAFT_PART_INSTALL/usr/local
