@@ -73,7 +73,7 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/var/lib/dpkg
       cp -a /var/lib/dpkg/* $CRAFT_PART_INSTALL/var/lib/dpkg/
 
-      mkdir -p $CRAFT_PART_INSTALL/var/lib/apt
+      mkdir -p $CRAFT_PART_INSTALL/var/lib/apt/lists
       cp -a /var/lib/apt/lists/* $CRAFT_PART_INSTALL/var/lib/apt/lists/
     
       mkdir -p $CRAFT_PART_INSTALL/etc/apt
