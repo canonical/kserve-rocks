@@ -104,7 +104,7 @@ parts:
         libcudnn8-dev=${CUDNN_VERSION}-1+cuda${CUDA} \
         libcurl3-dev \
         libzmq3-dev \
-        cuda-11-2
+        cuda-${CUDA_LIB}
 
       apt-get clean
       rm -rf /var/lib/apt/lists/*
@@ -157,9 +157,7 @@ parts:
       update-alternatives --install /usr/bin/python python /usr/bin/python3.6 0
       
       curl -fSsL -O "https://bootstrap.pypa.io/pip/3.6/get-pip.py"
-
       python3 get-pip.py
-
       rm -f get-pip.py
 
       pip3 --no-cache-dir install \
@@ -196,8 +194,8 @@ parts:
       ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so /usr/local/cuda-${CUDA}/lib64/libcudnn.so
       ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so.${TF_CUDNN_VERSION} /usr/local/cuda-${CUDA}/lib64/libcudnn.so.${TF_CUDNN_VERSION}
 
+      # Build tensorflow_model_server
       export TF_NCCL_VERSION=
-
       export TF_SERVING_BAZEL_OPTIONS=""
 
       ln -s /usr/local/cuda-${CUDA}/lib64/stubs/libcuda.so /usr/local/cuda-${CUDA}/lib64/stubs/libcuda.so.1
@@ -210,26 +208,6 @@ parts:
       tensorflow_serving/model_servers:tensorflow_model_server
 
       cp bazel-bin/tensorflow_serving/model_servers/tensorflow_model_server ${CRAFT_PART_INSTALL}/usr/bin/
-
-      rm -f /usr/local/cuda/lib64/stubs/libcuda.so.1
-
-      # Patch for deprecated python tensorflow-gpu package
-      sed -i '49,52d' tensorflow_serving/tools/pip_package/setup.py
-
-      bazel build --color=yes --curses=yes \
-      ${TF_SERVING_BAZEL_OPTIONS} \
-      --verbose_failures \
-      --output_filter=DONT_MATCH_ANYTHING \
-      ${TF_SERVING_BUILD_OPTIONS} \
-      tensorflow_serving/tools/pip_package:build_pip_package && \
-      bazel-bin/tensorflow_serving/tools/pip_package/build_pip_package \
-      /tmp/pip
-
-      mkdir -p ${CRAFT_PART_INSTALL}/models/model
-      
-      pip --no-cache-dir install --upgrade /tmp/pip/tensorflow_serving_api_gpu-*.whl
-      
-      rm -rf /tmp/pip
 
       # Clean build
       bazel clean --expunge --color=yes
