@@ -19,7 +19,8 @@ services:
     summary: "Huggingface server service"
     startup: enabled
     command: "python -m huggingfaceserver [ ]"
-    environment: 
+    environment:
+      PYTHONPATH: "/usr/local/lib/python3.10/dist-packages"
       HF_HOME: "/tmp/huggingface"
       SAFETENSORS_FAST_GPU: "1"
       HF_HUB_DISABLE_TELEMETRY: "1"
