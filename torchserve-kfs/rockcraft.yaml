@@ -21,7 +21,7 @@ services:
     override: replace
     summary: "TorchServe service"
     startup: enabled
-    command: "/usr/local/bin/dockerd-entrypoint.sh serve [ ]"
+    command: "/usr/local/bin/dockerd-entrypoint.sh [ ]"
     working-dir: /home/model-server
     user: model-server
     environment:
@@ -70,11 +70,7 @@ parts:
     build-environment:
       - PYTHON_VERSION: "3.9"
       - PYTHONUNBUFFERED: "TRUE"
-      - USE_CUDA: "1"
-      - CUDA_VERSION: "cu121"
     override-build: |
-      set -xe
-      
       mkdir -p ${CRAFT_PART_INSTALL}/usr/local/bin/
       cp -r ${CRAFT_PART_SRC}/docker/dockerd-entrypoint.sh ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
       chmod +x ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
@@ -97,11 +93,11 @@ parts:
       python -m pip install -U pip setuptools
       python -m pip install grpcio grpcio-tools
 
-      python ${CRAFT_PART_SRC}/ts_scripts/install_dependencies.py --cuda $CUDA_VERSION
+      python ${CRAFT_PART_SRC}/ts_scripts/install_dependencies.py
       
       python -m pip install --no-cache-dir torchserve-nightly torch-model-archiver-nightly torch-workflow-archiver-nightly
 
-      # Fix build step veirtual venv shebangs
+      # Fix build step virtual venv shebangs
       find ${CRAFT_PART_INSTALL}/home/venv/bin -type f -exec sed -i "s|#!${CRAFT_PART_INSTALL}/home/venv/bin/python|#!/home/venv/bin/python|g" {} +
       
       python -m grpc_tools.protoc \
