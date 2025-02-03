@@ -75,7 +75,11 @@ parts:
       cp -r ${CRAFT_PART_SRC}/docker/dockerd-entrypoint.sh ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
 
       # Pebble do not have access to `tail` command
-      sed -i 's|tail -f /dev/null|while true; do\n    sleep 3600\ndone|' ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
+      sed -i '/tail -f \/dev\/null/d' ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
+
+      # Add `--foreground` flag as a replacement for `tail`
+      sed -i 's/torchserve --start/torchserve --start --foreground/' ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
+
       chmod +x ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
 
       mkdir -p ${CRAFT_PART_INSTALL}/home/model-server/tmp
