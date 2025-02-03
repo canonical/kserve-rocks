@@ -114,10 +114,12 @@ parts:
     after: [torchserve-kfs]
     overlay-script: |
       # Create a user in the $CRAFT_OVERLAY chroot
-      useradd -R $CRAFT_OVERLAY -M -s /bin/bash -N -u 1001 model-server
+      useradd -R $CRAFT_OVERLAY -M -s /bin/bash -N -u 1001 -G users model-server
     override-prime: |
       craftctl default
       chown -R 584792:users home/model-server
       chown -R 584792:users home/venv
+      chmod -R g+rwx home/model-server
+
 
      
