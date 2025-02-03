@@ -55,7 +55,6 @@ parts:
       - python3.9-venv
       - openjdk-17-jdk
       - python3-distutils
-      - coreutils
     build-packages:
       - ca-certificates
       - git
@@ -74,6 +73,9 @@ parts:
     override-build: |
       mkdir -p ${CRAFT_PART_INSTALL}/usr/local/bin/
       cp -r ${CRAFT_PART_SRC}/docker/dockerd-entrypoint.sh ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
+
+      # Pebble do not have access to `tail` command
+      sed -i 's|tail -f /dev/null|while true; do\n    sleep 3600\ndone|' ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
       chmod +x ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
 
       mkdir -p ${CRAFT_PART_INSTALL}/home/model-server/tmp
@@ -100,6 +102,7 @@ parts:
 
       # Fix build step virtual venv shebangs
       find ${CRAFT_PART_INSTALL}/home/venv/bin -type f -exec sed -i "s|#!${CRAFT_PART_INSTALL}/home/venv/bin/python|#!/home/venv/bin/python|g" {} +
+
       
       python -m grpc_tools.protoc \
         --proto_path=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
