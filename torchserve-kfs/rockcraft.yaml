@@ -18,7 +18,7 @@ platforms:
 run-user: _daemon_
 services:
   torchserve:
-    override: 
+    override: replace
     summary: "TorchServe service"
     startup: enabled
     command: "/usr/local/bin/dockerd-entrypoint.sh [ ]"
