@@ -125,10 +125,10 @@ parts:
       useradd -R $CRAFT_OVERLAY -M -s /bin/bash -N -u 1001 -G users model-server
     override-prime: |
       craftctl default
-      chown -R 584792:users home/model-server
-      chown -R 584792:users home/venv
-      chown -R 584792:users usr/local/bin/docker-entrypoint.sh
-      chmod -R g+rwx home/model-server
+      chown -R 584792:users $CRAFT_PRIME/home/model-server
+      chown -R 584792:users $CRAFT_PRIME/home/venv
+      chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
+      chmod -R g+rwx $CRAFT_PRIME/home/model-server
 
 
      
