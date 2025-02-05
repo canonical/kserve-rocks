@@ -127,6 +127,7 @@ parts:
       craftctl default
       chown -R 584792:users home/model-server
       chown -R 584792:users home/venv
+      chown -R 584792:users $CRAFT_PRIME/usr/local/bin/docker-entrypoint.sh
       chmod -R g+rwx home/model-server
 
 
