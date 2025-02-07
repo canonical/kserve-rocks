@@ -131,7 +131,7 @@ parts:
       chmod -R g+rwx $CRAFT_PRIME/home/model-server
 
       # Fix for _daemon_ user to allow to start dockerd-entrypoint.sh
-      # usermod -d $CRAFT_PRIME/home/model-server _daemon_
+      sed -i '3i cd "/home/model-server"' $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
 
 
      
