@@ -58,8 +58,6 @@ parts:
     - python3.11-venv
     - gcc
     - build-essential
-    # # Including python3-pip here means pip also gets primed for the final rock
-    # - python3-pip
     override-build: |
       # Ensure Python 3.11 is the default version
       update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
