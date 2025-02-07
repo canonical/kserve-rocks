@@ -16,7 +16,8 @@ base: ubuntu@22.04
 platforms:
     amd64:
 run-user: _daemon_
-working-dir: /home/model-server
+working-dir: "/home/model-server"
+
 services:
   torchserve:
     override: replace
