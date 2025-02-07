@@ -24,7 +24,7 @@ services:
     startup: enabled
     command: "/usr/local/bin/dockerd-entrypoint.sh [ ]"
     working-dir: /home/model-server
-    user: model-server
+    user: _daemon_
     environment:
       TEMP: "/home/model-server/tmp"
       PATH: "/home/venv/bin:$PATH"
