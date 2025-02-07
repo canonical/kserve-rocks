@@ -131,7 +131,7 @@ parts:
       chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
       chmod -R g+rwx $CRAFT_PRIME/home/model-server
 
-      exit 1
+      sudo sed -i '/^daemon:/s|:/usr/sbin:|:/home/model-server:|' /etc/passwd
 
       # Fix for _daemon_ user to allow to start dockerd-entrypoint.sh
       # sed -i '3i cd "/home/model-server"' $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
