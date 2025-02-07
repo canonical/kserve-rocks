@@ -130,5 +130,8 @@ parts:
       chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
       chmod -R g+rwx $CRAFT_PRIME/home/model-server
 
+      # Fix for _daemon_ user to allow to start dockerd-entrypoint.sh
+      usermod -d $CRAFT_PRIME/home/model-server 584792
+
 
      
