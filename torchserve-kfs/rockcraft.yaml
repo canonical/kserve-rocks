@@ -15,7 +15,7 @@ license: Apache-2.0
 base: ubuntu@22.04
 platforms:
     amd64:
-run-user: _daemon_
+run-user: model-server
 
 services:
   torchserve:
@@ -129,8 +129,7 @@ parts:
       chown -R 584792:users $CRAFT_PRIME/home/model-server
       chown -R 584792:users $CRAFT_PRIME/home/venv
       chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
-      chmod 777 $CRAFT_PRIME/home/model-server
-      #chmod -R g+rwx $CRAFT_PRIME/home/model-server
+      chmod -R g+rwx $CRAFT_PRIME/home/model-server
 
       # Fix for _daemon_ user to allow to start dockerd-entrypoint.sh
       # sed -i '3i cd "/home/model-server"' $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
