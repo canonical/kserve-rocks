@@ -22,7 +22,7 @@ services:
     override: replace
     summary: "TorchServe service"
     startup: enabled
-    command: /bin/sh -c "cd /home/model-server" && /usr/local/bin/dockerd-entrypoint.sh [ ]
+    command: /bin/bash -c "cd /home/model-server" && /usr/local/bin/dockerd-entrypoint.sh [ ]
     working-dir: /home/model-server
     user: model-server
     environment:
@@ -56,6 +56,7 @@ parts:
       - python3.9-venv
       - openjdk-17-jdk
       - python3-distutils
+      - bash
     build-packages:
       - ca-certificates
       - git
@@ -67,7 +68,7 @@ parts:
       - python3.9 
       - python3.9-dev 
       - python3.9-venv
-      - openjdk-17-jdk      
+      - openjdk-17-jdk
     build-environment:
       - PYTHON_VERSION: "3.9"
       - PYTHONUNBUFFERED: "TRUE"
@@ -129,7 +130,7 @@ parts:
       chown -R 584792:users $CRAFT_PRIME/home/model-server
       chown -R 584792:users $CRAFT_PRIME/home/venv
       chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
-      chown -R 584792:users $CRAFT_PRIME/bin/sh
+      chown -R 584792:users $CRAFT_PRIME/bin/bash
       chmod -R g+rwx $CRAFT_PRIME/home/model-server
 
       touch $CRAFT_PRIME/key_file.json
