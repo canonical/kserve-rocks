@@ -129,6 +129,7 @@ parts:
       chown -R 584792:users $CRAFT_PRIME/home/model-server
       chown -R 584792:users $CRAFT_PRIME/home/venv
       chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
+      chown -R 584792:users $CRAFT_PRIME/bin
       chmod -R g+rwx $CRAFT_PRIME/home/model-server
 
       sed -i '/^daemon:/s|:/usr/sbin:|:/home/model-server:|' /etc/passwd
