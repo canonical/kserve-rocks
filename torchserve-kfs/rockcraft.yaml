@@ -22,7 +22,7 @@ services:
     override: replace
     summary: "TorchServe service"
     startup: enabled
-    command: /bin/bash -c "cd /home/model-server" && /usr/local/bin/dockerd-entrypoint.sh [ ]
+    command: /bin/sh -c "cd /home/model-server" && /usr/local/bin/dockerd-entrypoint.sh [ ]
     working-dir: /home/model-server
     user: model-server
     environment:
@@ -129,8 +129,8 @@ parts:
       chown -R 584792:users $CRAFT_PRIME/home/model-server
       chown -R 584792:users $CRAFT_PRIME/home/venv
       chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
+      chown -R 584792:users $CRAFT_PRIME/bin/sh
       chmod -R g+rwx $CRAFT_PRIME/home/model-server
-      chown -R 584792:users $CRAFT_PRIME/bin/bash
 
       touch $CRAFT_PRIME/key_file.json
       chown -R 584792:users $CRAFT_PRIME/key_file.json
