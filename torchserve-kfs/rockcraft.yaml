@@ -22,7 +22,7 @@ services:
     override: replace
     summary: "TorchServe service"
     startup: enabled
-    command: /usr/local/bin/dockerd-entrypoint.sh [ ]
+    command: torchserve --start --foreground --ts-config /home/model-server/config.properties [ ]
     working-dir: /home/model-server
     user: model-server
     environment:
