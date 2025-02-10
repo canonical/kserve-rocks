@@ -124,5 +124,6 @@ parts:
     after: [torchserve-kfs]
     overlay-script: |
       # Create a user in the $CRAFT_OVERLAY chroot
-      set -x
-      useradd -R $CRAFT_OVERLAY -M -s /bin/bash -N -u 1001 -G users model-server
+      groupadd --root ${CRAFT_PART_INSTALL} users
+      useradd -d /home/model-server -s /bin/bash --root ${CRAFT_PART_INSTALL} -g users model-server
+      
