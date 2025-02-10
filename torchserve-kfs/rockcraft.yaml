@@ -22,9 +22,9 @@ services:
     override: replace
     summary: "TorchServe service"
     startup: enabled
-    command: bash -c "cd /home/model-server && /usr/local/bin/dockerd-entrypoint.sh [ ]"
+    command: bash -c "cd /home/model-server" && /usr/local/bin/dockerd-entrypoint.sh [ ]
     working-dir: /home/model-server
-    user: _daemon_
+    user: model-server
     environment:
       TEMP: "/home/model-server/tmp"
       PATH: "/home/venv/bin:$PATH"
