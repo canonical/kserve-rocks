@@ -130,6 +130,7 @@ parts:
       chown -R 584792:users $CRAFT_PRIME/home/venv
       chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
       chmod -R g+rwx $CRAFT_PRIME/home/model-server
+      chown -R 584792:users $CRAFT_PRIME/bin/
 
       touch $CRAFT_PRIME/key_file.json
       chown -R 584792:users $CRAFT_PRIME/key_file.json
