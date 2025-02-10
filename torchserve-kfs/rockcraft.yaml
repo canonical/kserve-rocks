@@ -22,7 +22,7 @@ services:
     override: replace
     summary: "TorchServe service"
     startup: enabled
-    command: torchserve --start --foreground --ts-config /home/model-server/config.properties [ ]
+    command: /usr/local/bin/dockerd-entrypoint.sh [ ]
     working-dir: /home/model-server
     user: model-server
     environment:
@@ -124,19 +124,5 @@ parts:
     after: [torchserve-kfs]
     overlay-script: |
       # Create a user in the $CRAFT_OVERLAY chroot
+      set -x
       useradd -R $CRAFT_OVERLAY -M -s /bin/bash -N -u 1001 -G users model-server
-    override-prime: |
-      craftctl default
-      chown -R 584792:users $CRAFT_PRIME/home/model-server
-      chown -R 584792:users $CRAFT_PRIME/home/venv
-      chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
-      chmod -R g+rwx $CRAFT_PRIME/home/model-server
-
-      cp ${CRAFT_STAGE}/bin/bash ${CRAFT_PRIME}/bin/bash
-      chmod 755 $CRAFT_PRIME/bin/bash
-
-      # Fix for _daemon_ user to allow to start dockerd-entrypoint.sh
-      # sed -i '3i cd "/home/model-server"' $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
-
-
-     
