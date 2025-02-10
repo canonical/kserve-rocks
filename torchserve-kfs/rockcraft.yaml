@@ -15,7 +15,6 @@ license: Apache-2.0
 base: ubuntu@22.04
 platforms:
     amd64:
-run-user: _daemon_
 
 services:
   torchserve:
@@ -124,6 +123,5 @@ parts:
     after: [torchserve-kfs]
     overlay-script: |
       # Create a user in the $CRAFT_OVERLAY chroot
-      groupadd --root ${CRAFT_PART_INSTALL} users
-      useradd -d /home/model-server -s /bin/bash --root ${CRAFT_PART_INSTALL} -g users model-server
+      useradd -R $CRAFT_OVERLAY -M -s /bin/bash -N -u 1001 -G users model-server
       
