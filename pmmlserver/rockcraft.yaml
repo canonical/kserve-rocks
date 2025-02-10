@@ -45,17 +45,10 @@ parts:
     source-subdir: python
     source-tag: v0.14.1
     build-packages:
-    - build-essential
-    - libgomp1
     - python3.11
-    - python3.11-dev
     - python3.11-venv
-    - gcc
-    - build-essential
     overlay-packages:
     - python3.11
-    - python3.11-dev
-    - python3.11-venv
     - gcc
     - build-essential
     override-build: |
