@@ -130,12 +130,10 @@ parts:
       chown -R 584792:users $CRAFT_PRIME/home/model-server
       chown -R 584792:users $CRAFT_PRIME/home/venv
       chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
-      chown -R 584792:users $CRAFT_PRIME/bin/bash
       chmod -R g+rwx $CRAFT_PRIME/home/model-server
 
-      touch $CRAFT_PRIME/key_file.json
-      chown -R 584792:users $CRAFT_PRIME/key_file.json
-      chmod -R g+rwx $CRAFT_PRIME/key_file.json
+      cp ${CRAFT_STAGE}/bin/bash ${CRAFT_PRIME}/bin/bash
+      chown -R 584792:users $CRAFT_PRIME/bin/bash
 
       # Fix for _daemon_ user to allow to start dockerd-entrypoint.sh
       # sed -i '3i cd "/home/model-server"' $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
