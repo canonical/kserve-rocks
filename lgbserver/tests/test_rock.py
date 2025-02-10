@@ -42,7 +42,7 @@ def test_rock(rock_test_env):
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /usr/local/lib/python3.10/dist-packages/lgbserver",
+            "ls -la /usr/local/lib/python3.11/dist-packages/lgbserver",
         ],
         check=True,
     )
@@ -54,7 +54,7 @@ def test_rock(rock_test_env):
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /usr/local/lib/python3.10/dist-packages/kserve",
+            "ls -la /usr/local/lib/python3.11/dist-packages/kserve",
         ],
         check=True,
     )
