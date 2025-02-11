@@ -5,8 +5,9 @@ description = ""
 authors = ["none"]
 
 [tool.poetry.dependencies]
-# This range should match that used in upstream's server pyproject.toml
-python = ">=3.8,<3.12"
+# This range should match that used in upstream's server pyproject.toml:
+# https://github.com/kserve/kserve/blob/564cc2d760b7f47e883a4001876cd98815cfc07d/python/xgbserver/pyproject.toml#L13
+python = ">=3.9,<3.13"
 kserve = { path = "../python/kserve", develop = false }
 xgbserver = { path = "../python/xgbserver", develop = false }
 
