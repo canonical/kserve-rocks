@@ -1,11 +1,11 @@
-# Based on https://github.com/kserve/kserve/blob/v0.13.0/python/storage-initializer.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.14.1/python/storage-initializer.Dockerfile
 #
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
 # This rock is implemented with some atypical patterns due to the native of the upstream
 name: storage-initializer
 summary: Storage initializer for Kserve deployments
 description: "Kserve storage initializer"
-version: "0.13.0"
+version: "0.14.1"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -22,12 +22,6 @@ services:
     working-dir: /work/
 entrypoint-service: storage-initializer
 
-# TODO
-package-repositories:
-  - type: apt
-    ppa: deadsnakes/ppa
-    priority: always
-
 parts:
   security-team-requirement:
     plugin: nil
@@ -38,21 +32,24 @@ parts:
   python:
     plugin: nil
     source: https://github.com/kserve/kserve.git
-    source-tag: v0.13.0
+    source-tag: v0.14.1
     build-packages:
+    - python3.11
+    # Needed to build wheel for requests-kerberos
+    - python3.11-dev
+    - python3.11-venv
     - gcc
     - libkrb5-dev
     - krb5-config
     overlay-packages:
-    - python3.10
-    # Including python3-pip here means pip also gets primed for the final rock
-    - python3-pip
+    - python3.11
     override-build: |
-      # Populate the build system's python environment with all packages needed for 
-      # the server in the final rock
+      # Ensure Python 3.11 is the default version
+      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+      update-alternatives --set python3 /usr/bin/python3.11
       
       # Setup poetry
-      pip install poetry==1.7.1
+      python3 -m pip install --upgrade pip setuptools poetry==1.8.3
       poetry config virtualenvs.create false 
 
       # Install the kserve package, this specific server package, and their dependencies.
@@ -61,8 +58,8 @@ parts:
       (cd python_env_builddir && poetry install --no-interaction --no-root)
 
       # Promote the packages we've installed from the local env to the primed image
-      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
-      cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
+      cp -fr /usr/local/lib/python3.11/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
       # TODO: why do we need this?
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
@@ -71,11 +68,11 @@ parts:
       # Ensure `python` is an executable command in our primed image by making
       # a symbolic link
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
-      ln -sf /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
-      ln -sf /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python3
+      ln -sf /usr/bin/python3.11 $CRAFT_PART_INSTALL/usr/bin/python
+      ln -sf /usr/bin/python3.11 $CRAFT_PART_INSTALL/usr/bin/python3
 
       # Install additional packages
-      pip install --no-cache-dir krbcontext==0.10 hdfs~=2.6.0 requests-kerberos==0.14.0
+      python3 -m pip install --no-cache-dir krbcontext==0.10 hdfs~=2.6.0 requests-kerberos==0.14.0
 
       # Copy the storage-initializer scripts
       chmod +x ./python/storage-initializer/scripts/initializer-entrypoint
@@ -86,7 +83,7 @@ parts:
     after: [python]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.13.0
+    source-tag: v0.14.1
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
 
@@ -104,4 +101,8 @@ parts:
         owner: 584792
         group: 584792
         mode: "755"
-
+      - path: mnt
+        # 584792 is the _daemon_ user
+        owner: 584792
+        group: 584792
+        mode: "755"
