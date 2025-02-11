@@ -1,4 +1,4 @@
-# Based on https://github.com/kserve/kserve/blob/v0.13.0/python/pmml.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.14.1/python/pmml.Dockerfile
 # 
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
 # This rock is implemented with some atypical patterns due to the native of the upstream
@@ -6,7 +6,7 @@
 name: pmmlserver
 summary: Pmml server for Kserve deployments
 description: "Kserve Pmml server"
-version: "0.13.0"
+version: "0.14.1"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -29,35 +29,26 @@ parts:
       dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
 
-  java:
-    plugin: nil
-    build-packages:
-      - default-jdk
-    stage-packages:
-      - default-jdk
-    # Also stage the links for java executable
-    override-build:
-      ln -s /usr/lib/jvm/java-11-openjdk-amd64/bin/java $CRAFT_PART_INSTALL/usr/bin/java
-
   python:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.13.0
+    source-tag: v0.14.1
     build-packages:
-      - build-essential
-      - libgomp1
+    - python3.11
+    - python3.11-venv
+    - openjdk-21-jdk
     overlay-packages:
-    - python3.10  
-    # Including python3-pip here means pip also gets primed for the final rock
-    - python3-pip
+    - python3.11
+    - openjdk-21-jdk
     override-build: |
-      # Populate the build system's python environment with all packages needed for 
-      # the server in the final rock
-      
+      # Ensure Python 3.11 is the default version
+      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+      update-alternatives --set python3 /usr/bin/python3.11
+
       # Setup poetry
-      pip install poetry==1.7.1
-      poetry config virtualenvs.create false 
+      python3 -m pip install --upgrade pip setuptools poetry==1.8.3
+      poetry config virtualenvs.create false
 
       # Install the kserve package, this specific server package, and their dependencies.
       mkdir -p ./python_env_builddir
@@ -65,17 +56,16 @@ parts:
       (cd python_env_builddir && poetry install --no-interaction --no-root)
 
       # Promote the packages we've installed from the local env to the primed image
-      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
-      cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
+      cp -fr /usr/local/lib/python3.11/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
-      # TODO: why do we need this?
+      # Ensure `python` is an executable command in our primed image
+      mkdir -p $CRAFT_PART_INSTALL/usr/bin/
+      ln -s /usr/bin/python3.11 $CRAFT_PART_INSTALL/usr/bin/python
+
+      # Move Py4J jar file to $CRAFT_PART_INSTALL
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
       cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
-
-      # Ensure `python` is an executable command in our primed image by making
-      # a symbolic link
-      mkdir -p $CRAFT_PART_INSTALL/usr/bin/
-      ln -s /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
 
   # Copy licenses
   third-party:
@@ -83,7 +73,6 @@ parts:
     after: [python]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.13.0
+    source-tag: v0.14.1
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
-
