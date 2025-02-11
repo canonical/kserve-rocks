@@ -39,7 +39,6 @@ parts:
     - python3.11-venv
     overlay-packages:
     - python3.11
-    - build-essential
     override-build: |
       # Ensure Python 3.11 is the default version
       update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
