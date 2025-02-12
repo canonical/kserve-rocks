@@ -5,7 +5,9 @@ description = ""
 authors = ["none"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
+# The Python version should match the range used in upstream:
+# https://github.com/kserve/kserve/blob/564cc2d760b7f47e883a4001876cd98815cfc07d/python/sklearnserver/pyproject.toml#L13
+python = ">=3.9,<3.13"
 kserve = { path = "../python/kserve", develop = false }
 sklearnserver = { path = "../python/sklearnserver", develop = false }
 
