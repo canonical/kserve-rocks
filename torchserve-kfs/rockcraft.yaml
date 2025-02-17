@@ -1,0 +1,133 @@
+# Based on the following Dockerfiles:
+# https://github.com/pytorch/serve/blob/v0.9.0/docker/Dockerfile
+# https://github.com/pytorch/serve/blob/v0.9.0/kubernetes/kserve/Dockerfile
+#
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+# This rock is implemented with some atypical patterns due to the native of the upstream
+name: torchserve-kfs
+summary: TorchServe is a flexible and easy to use tool for serving and scaling PyTorch models in production.
+description: |
+  TorchServe is an open-source model serving framework designed for PyTorch models. 
+  It provides a scalable, production-ready environment to deploy machine learning models 
+  with features like multi-model serving, logging, metrics, and GPU acceleration. 
+version: "0.9.0"
+license: Apache-2.0
+base: ubuntu@22.04
+platforms:
+    amd64:
+
+services:
+  torchserve:
+    override: replace
+    summary: "TorchServe service"
+    startup: enabled
+    command: /usr/local/bin/dockerd-entrypoint.sh [ ]
+    working-dir: /home/model-server
+    user: model-server
+    environment:
+      TEMP: "/home/model-server/tmp"
+      PATH: "/home/venv/bin:$PATH"
+      JAVA_HOME: "/usr/lib/jvm/java-1.17.0-openjdk-amd64"
+entrypoint-service: torchserve
+
+package-repositories:
+  - type: apt
+    ppa: deadsnakes/ppa
+    priority: always
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  torchserve-kfs:
+    plugin: nil
+    source: https://github.com/pytorch/serve
+    source-type: git
+    source-tag: v0.9.0
+    stage-packages:
+      - python3.9 
+      - python3.9-dev 
+      - python3.9-venv
+      - openjdk-17-jdk
+      - python3-distutils
+      - bash
+    build-packages:
+      - ca-certificates
+      - git
+      - curl
+      - software-properties-common
+      - build-essential
+      - g++ 
+      - python3-distutils
+      - python3.9 
+      - python3.9-dev 
+      - python3.9-venv
+      - openjdk-17-jdk
+    build-environment:
+      - PYTHON_VERSION: "3.9"
+      - PYTHONUNBUFFERED: "TRUE"
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/local/bin/
+      cp -r ${CRAFT_PART_SRC}/docker/dockerd-entrypoint.sh ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
+
+      # Pebble do not have access to `tail` command
+      sed -i '/tail -f \/dev\/null/d' ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
+
+      # Add `--foreground` flag as a replacement for `tail`
+      sed -i 's/torchserve --start/torchserve --start --foreground/' ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
+
+      chmod +x ${CRAFT_PART_INSTALL}/usr/local/bin/dockerd-entrypoint.sh
+
+      mkdir -p ${CRAFT_PART_INSTALL}/home/model-server/tmp
+      mkdir ${CRAFT_PART_INSTALL}/home/model-server/model-store
+      mkdir ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper      
+
+      cp -r ${CRAFT_PART_SRC}/docker/config.properties ${CRAFT_PART_INSTALL}/home/model-server/config.properties
+      cp ${CRAFT_PART_SRC}/frontend/server/src/main/resources/proto/*.proto ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper
+
+      python$PYTHON_VERSION -m venv ${CRAFT_PART_INSTALL}/home/venv 
+
+      source ${CRAFT_PART_INSTALL}/home/venv/bin/activate
+
+      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python
+      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python3
+      ln -sf /usr/bin/python${PYTHON_VERSION} ${CRAFT_PART_INSTALL}/home/venv/bin/python3.9
+
+      python -m pip install -U pip setuptools
+      python -m pip install grpcio grpcio-tools
+
+      python ${CRAFT_PART_SRC}/ts_scripts/install_dependencies.py
+      
+      python -m pip install --no-cache-dir torchserve-nightly torch-model-archiver-nightly torch-workflow-archiver-nightly
+
+      # Fix build step virtual venv shebangs
+      find ${CRAFT_PART_INSTALL}/home/venv/bin -type f -exec sed -i "s|#!${CRAFT_PART_INSTALL}/home/venv/bin/python|#!/home/venv/bin/python|g" {} +
+
+      
+      python -m grpc_tools.protoc \
+        --proto_path=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
+        --python_out=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
+        --grpc_python_out=${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper \
+        ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/inference.proto \
+        ${CRAFT_PART_INSTALL}/home/model-server/kserve_wrapper/management.proto
+
+
+  # not-root user for this rock should be 'model-server'
+  non-root-user:
+    plugin: nil
+    after: [torchserve-kfs]
+    overlay-script: |
+      # Create a user in the $CRAFT_OVERLAY chroot
+      useradd -R $CRAFT_OVERLAY -M -s /bin/bash -N -u 1001 -G users model-server
+    override-prime: |
+      craftctl default
+      chown -R 584792:users $CRAFT_PRIME/home/model-server
+      chown -R 584792:users $CRAFT_PRIME/home/venv
+      chown -R 584792:users $CRAFT_PRIME/usr/local/bin/dockerd-entrypoint.sh
+      chmod -R g+rwx $CRAFT_PRIME/home/model-server      
+      
