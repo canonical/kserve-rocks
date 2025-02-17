@@ -1,9 +1,7 @@
 # Copyright 2024 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import random
 import pytest
-import string
 import subprocess
 
 from charmed_kubeflow_chisme.rock import CheckRock
@@ -26,7 +24,7 @@ def test_rock():
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /usr/local/lib/python3.10/dist-packages/artserver",
+            "ls -la /usr/local/lib/python3.11/dist-packages/artserver",
         ],
         check=True,
     )
@@ -38,7 +36,7 @@ def test_rock():
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /usr/local/lib/python3.10/dist-packages/kserve",
+            "ls -la /usr/local/lib/python3.11/dist-packages/kserve",
         ],
         check=True,
     )
