@@ -1,11 +1,11 @@
-# Based on https://github.com/kserve/kserve/blob/v0.13.0/python/huggingface_server.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.14.1/python/huggingface_server.Dockerfile
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
 # This rock is implemented with some atypical patterns due to the native of the upstream
 # Dockerfile.
 name: huggingfaceserver
 summary: Huggingface server for Kserve deployments
 description: "Kserve Huggingface server"
-version: "0.13.0"
+version: "0.14.1"
 license: Apache-2.0
 base: ubuntu@22.04
 run-user: _daemon_
@@ -24,12 +24,12 @@ services:
       HF_HOME: "/tmp/huggingface"
       SAFETENSORS_FAST_GPU: "1"
       HF_HUB_DISABLE_TELEMETRY: "1"
-      CUDA: "12.1"
-      CUDA_VERSION: "12.1.0"
+      CUDA: "12.4"
+      CUDA_VERSION: "12.4.1"
       NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
       PATH: "/usr/local/nvidia/bin:/usr/local/cuda/bin:$PATH"
-      LD_LIBRARY_PATH: "/usr/local/cuda-12.1/lib:/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH"    
+      LD_LIBRARY_PATH: "/usr/local/cuda-12.4/lib:/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH"    
 entrypoint-service: huggingfaceserver
 
 parts:
@@ -45,7 +45,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.13.0
+    source-tag: v0.14.1
     overlay-packages:
       - python3.10  
       # Including python3-pip here means pip also gets primed for the final rock
@@ -55,20 +55,20 @@ parts:
       - libgomp1
       - wget
     build-environment:
-      - CUDA: "12.1"
-      - LD_LIBRARY_PATH: "/usr/local/cuda-12.1/lib:/usr/local/cuda-12.1/lib64:$LD_LIBRARY_PATH"
+      - CUDA: "12.4"
+      - LD_LIBRARY_PATH: "/usr/local/cuda-12.4/lib:/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH"
     override-build: |
       # Add NVIDIA repository key and update the package list
-      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
-      dpkg -i cuda-keyring_1.0-1_all.deb
+      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+      dpkg -i cuda-keyring_1.1-1_all.deb
       apt-get -yq update
     
       # Install CUDA toolkit
-      apt-get -yq install --no-install-recommends cuda-keyring=1.0-1 cuda-compat-12-1=530.30.02-1 cuda-cudart-12-1=12.1.55-1 cuda-toolkit-12-1-config-common=12.1.105-1 cuda-toolkit-12-config-common=12.3.52-1 cuda-toolkit-config-common=12.3.52-1 
+      apt-get -yq install --no-install-recommends cuda-keyring=1.1-1 cuda-compat-12-4=550.54.15-1 cuda-cudart-12-4=12.4.127-1 cuda-toolkit-12-4-config-common=12.4.127-1 cuda-toolkit-12-config-common=12.4.127-1 cuda-toolkit-config-common=12.4.127-1
 
       # Copy cuda libs
       mkdir -p $CRAFT_PART_INSTALL/usr/local
-      cp -a /usr/local/cuda-12.1 $CRAFT_PART_INSTALL/usr/local/
+      cp -a /usr/local/cuda-12.4 $CRAFT_PART_INSTALL/usr/local/
     
       # Copy dpkg and apt information to the final image
       mkdir -p $CRAFT_PART_INSTALL/var/lib/dpkg
@@ -86,7 +86,7 @@ parts:
       rm -rf /var/lib/apt/lists/*
       
       # Setup poetry
-      pip install --no-cache-dir poetry==1.7.1 vllm==0.4.2
+      pip install --no-cache-dir poetry==1.8.3 vllm==0.6.1.post2
       poetry config virtualenvs.create false 
 
       # Install the kserve package, this specific server package, and their dependencies.
@@ -115,6 +115,6 @@ parts:
     after: [python]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.13.0
+    source-tag: v0.14.1
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
