@@ -5,9 +5,10 @@ description: "KServe Router"
 version: "0.14.1"
 license: Apache-2.0
 base: ubuntu@22.04
+run-user: _daemon_
+
 platforms:
     amd64:
-run-user: _daemon_
 
 services:
   kserve-router:
@@ -36,7 +37,6 @@ parts:
       - CGO_ENABLED: 0
       - GOOS: linux
     override-build: |
-
       # Empty the build directory and copy the build files that are
       # specified in the upstream Dockerfile.
       rm -rf ./*
