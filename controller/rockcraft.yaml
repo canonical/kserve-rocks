@@ -33,21 +33,20 @@ parts:
     build-snaps:
       - go/1.22/stable
     build-environment:
-      - CGO_ENABLED: 0
+      - CGO_ENABLED: "0"
       - GOOS: linux
     override-build: |
-
-      # Empty the build directory and copy the build files that are
-      # specified in the upstream Dockerfile.
-      rm -rf ./*
-
-      # Copy in the go src
-      cp $CRAFT_PART_SRC/go.mod $CRAFT_PART_SRC/go.sum ./
+      # Patch ReadOnlyRootFilesystem when creating the router Deployment, so that
+      # the container will have a writable file system.
+      # More details in https://github.com/canonical/kserve-operators/issues/328.
+      # Remove once pebble won't need to always write some state to disk
+      # https://github.com/canonical/pebble/issues/462.
+      sed -i \
+          's#ReadOnlyRootFilesystem:   proto.Bool(true)#ReadOnlyRootFilesystem:   proto.Bool(false)#' \
+          pkg/controller/v1alpha1/inferencegraph/knative_reconciler.go \
+          pkg/controller/v1alpha1/inferencegraph/raw_ig.go
 
       go mod download
-
-      cp -r $CRAFT_PART_SRC/cmd ./cmd
-      cp -r $CRAFT_PART_SRC/pkg ./pkg
 
       # Build
       go build -a -o manager ./cmd/manager
