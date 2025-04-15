@@ -10,12 +10,14 @@ run-user: _daemon_
 platforms:
     amd64:
 
+entrypoint-service: kserve-router
 services:
   kserve-router:
     override: replace
     summary: "KServe router service"
     startup: enabled
-    command: "/ko-app/router"
+    command: "/ko-app/router [ ]"
+
 
 parts:
   security-team-requirement:

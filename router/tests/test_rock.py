@@ -21,16 +21,25 @@ def test_rock():
             "docker",
             "run",
             "--rm",
+            "--entrypoint",
+            "/bin/bash",
             LOCAL_ROCK_IMAGE,
-            "exec",
-            "ls",
-            "-la",
-            "/third_party",
+            "-c",
+            "ls -la /third_party",
         ],
         check=True,
     )
 
     subprocess.run(
-        ["docker", "run", "--rm", LOCAL_ROCK_IMAGE, "exec", "ls", "-la", "/ko-app/router"],
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            "ls -la /ko-app/router",
+        ],
         check=True,
     )
