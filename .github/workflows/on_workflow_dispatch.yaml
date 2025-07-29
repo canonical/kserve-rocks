@@ -23,7 +23,7 @@ on:
 
 jobs:
   run-shared-integration:
-    uses: misohu/charmed-kubeflow-workflows/.github/workflows/integrate-rock.yaml@main
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/integrate-rock.yaml@main
     with:
       rock-dir: ${{ inputs.rock-dir }}
       full-image-tag: ${{ inputs.full-image-tag }}
