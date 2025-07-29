@@ -1,0 +1,31 @@
+name: Manually Run Rock Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      rock-dir:
+        description: "Path to the rock directory (e.g. rocks/my-rock)"
+        required: true
+        type: string
+      target-branch:
+        description: "Branch to integrate into"
+        required: true
+        type: string
+      dry-run:
+        description: "Dry run?"
+        required: false
+        type: boolean
+        default: true
+      full-image-tag:
+        description: "Full image reference from Docker registry"
+        required: true
+        type: string
+
+jobs:
+  run-shared-integration:
+    uses: misohu/charmed-kubeflow-workflows/.github/workflows/integrate-rock.yaml@main
+    with:
+      rock-dir: ${{ inputs.rock-dir }}
+      full-image-tag: ${{ inputs.full-image-tag }}
+      event-name: workflow_dispatch
+    secrets: inherit
