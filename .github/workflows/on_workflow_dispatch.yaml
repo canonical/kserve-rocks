@@ -12,12 +12,12 @@ on:
         required: true
         type: string
       dry-run:
-        description: "Dry run?"
+        description: "Dry run? defaults to true"
         required: false
         type: boolean
         default: true
       full-image-tag:
-        description: "Full image reference from Docker registry"
+        description: "Full image reference from Image registry"
         required: true
         type: string
 
