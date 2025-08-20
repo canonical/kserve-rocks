@@ -1,0 +1,6 @@
+integrations:
+  - consumer-repository: https://github.com/canonical/kserve-operators.git
+   
+    replace-image:
+      - file: charms/kserve-controller/src/default-custom-images.json
+        path: configmap__storageInitializer
