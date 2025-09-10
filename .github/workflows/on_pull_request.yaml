@@ -1,4 +1,4 @@
-name: On Pull Request
+name: On PR
 
 on:
   pull_request:
@@ -6,7 +6,6 @@ on:
 jobs:
 
   on-pull-request:
-    name: Get rocks modified and build-scan-test them
     uses: canonical/charmed-kubeflow-workflows/.github/workflows/get-rocks-modified-and-build-scan-test-publish.yaml@main
     permissions:
       pull-requests: read
