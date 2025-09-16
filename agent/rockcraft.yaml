@@ -13,7 +13,7 @@ entrypoint-service: kserve-agent
 services:
   kserve-agent:
     override: replace
-    summary: "KServe agent service"
+    summary: "KServe agent service - the wrong way"
     startup: enabled
     command: "/ko-app/agent [ ]"
 
