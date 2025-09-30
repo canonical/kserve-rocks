@@ -17,7 +17,7 @@ services:
     override: replace
     summary: "Art server service"
     startup: enabled
-    command: "python -m artserver [ ]"
+    command: "python -m artserver [ dummy-arguments ]"
 entrypoint-service: artserver
 
 parts:
