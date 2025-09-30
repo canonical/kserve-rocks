@@ -17,7 +17,7 @@ services:
     override: replace
     summary: "sklearn server service"
     startup: enabled
-    command: "python -m sklearnserver [ ]"
+    command: "python -m sklearnserver [ dummy-arguments ]"
 entrypoint-service: sklearnserver
 
 parts:
