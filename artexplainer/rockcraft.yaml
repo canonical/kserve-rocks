@@ -1,4 +1,4 @@
-# Based on https://github.com/kserve/kserve/blob/v0.14.1/python/artexplainer.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/artexplainer.Dockerfile
 #
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
 # This rock is implemented with some atypical patterns due to the native of the upstream
@@ -6,7 +6,7 @@
 name: artexplainer
 summary: Art server for Kserve deployments
 description: "Kserve Art server"
-version: "0.14.1"
+version: "0.15.2"
 license: Apache-2.0
 base: ubuntu@22.04
 run-user: _daemon_
@@ -33,7 +33,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.14.1
+    source-tag: v0.15.2
     build-packages:
     - python3.11
     - python3.11-venv
@@ -67,6 +67,6 @@ parts:
     after: [python]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.14.1
+    source-tag: v0.15.2
     override-build: |
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
