@@ -56,8 +56,8 @@ parts:
       # Generate third-party licenses
       cp -r $CRAFT_PART_SRC/LICENSE ./LICENSE
       go install github.com/google/go-licenses@latest
-      $GOPATH/bin/go-licenses check ./cmd/... ./pkg/... --disallowed_types="forbidden,unknown"
-      $GOPATH/bin/go-licenses save --save_path third_party/library ./cmd/agent
+      $GOBIN/go-licenses check ./cmd/... ./pkg/... --disallowed_types="forbidden,unknown"
+      $GOBIN/go-licenses save --save_path third_party/library ./cmd/agent
 
       # Copy the files to the install directory
       mkdir $CRAFT_PART_INSTALL/third_party
