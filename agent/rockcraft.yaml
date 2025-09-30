@@ -1,8 +1,8 @@
-# Based on https://github.com/kserve/kserve/blob/v0.14.1/agent.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.15.2/agent.Dockerfile
 name: kserve-agent
 summary: KServe agent
 description: "KServe model agent"
-version: "0.14.1"
+version: "0.15.2"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -30,7 +30,7 @@ parts:
     plugin: go
     source: https://github.com/kserve/kserve
     source-type: git
-    source-tag: v0.14.1
+    source-tag: v0.15.2
     build-snaps:
       - go/1.22/stable
     build-environment:
