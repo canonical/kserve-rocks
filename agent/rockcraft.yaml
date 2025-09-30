@@ -15,7 +15,7 @@ services:
     override: replace
     summary: "KServe agent service"
     startup: enabled
-    command: "/ko-app/agent [ ]"
+    command: "/ko-app/agent [ dummy-arguments ]"
 
 parts:
   security-team-requirement:
