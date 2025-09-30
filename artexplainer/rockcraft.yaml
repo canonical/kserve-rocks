@@ -61,12 +61,12 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
       ln -s /usr/bin/python3.11 $CRAFT_PART_INSTALL/usr/bin/python
 
-  # Copy licenses
-  third-party:
-    plugin: nil
-    after: [python]
-    source: https://github.com/kserve/kserve.git
-    source-subdir: python
-    source-tag: v0.15.2
-    override-build: |
-      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
+      # Generate third-party licenses
+      cd python
+      cp third_party/pip-licenses.py pip-licenses.py
+      # TODO: Remove this when upgrading to python 3.11+
+      pip install --no-cache-dir tomli
+      mkdir -p third_party/library && python3 pip-licenses.py
+      mkdir ${CRAFT_PART_INSTALL}/third_party
+      cp -r third_party/ ${CRAFT_PART_INSTALL}/third_party
+      cd ..
