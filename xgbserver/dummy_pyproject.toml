@@ -6,7 +6,7 @@ authors = ["none"]
 
 [tool.poetry.dependencies]
 # This range should match that used in upstream's server pyproject.toml:
-# https://github.com/kserve/kserve/blob/v0.15.1/python/xgbserver/pyproject.toml#L13
+# https://github.com/kserve/kserve/blob/v0.15.2/python/xgbserver/pyproject.toml#L13
 python = ">=3.9,<3.13"
 kserve = { path = "../python/kserve", develop = false }
 xgbserver = { path = "../python/xgbserver", develop = false }
