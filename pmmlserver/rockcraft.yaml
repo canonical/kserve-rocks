@@ -6,7 +6,7 @@
 name: pmmlserver
 summary: Pmml server for Kserve deployments
 description: "Kserve Pmml server"
-version: "0.14.1"
+version: "0.15.2"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -17,7 +17,7 @@ services:
     override: replace
     summary: "Pmml server service"
     startup: enabled
-    command: "python -m pmmlserver [ ]"
+    command: "python -m pmmlserver [ dummy-arguments ]"
 entrypoint-service: pmmlserver
 
 parts:
@@ -33,7 +33,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.14.1
+    source-tag: v0.15.2
     build-packages:
     - python3.11
     - python3.11-venv
@@ -65,14 +65,12 @@ parts:
 
       # Move Py4J jar file to $CRAFT_PART_INSTALL
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
-      cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
+      cp -fr /usr/local/share/py4j $CRAFT_PART_INSTALL/usr/local/share/
 
-  # Copy licenses
-  third-party:
-    plugin: nil
-    after: [python]
-    source: https://github.com/kserve/kserve.git
-    source-subdir: python
-    source-tag: v0.14.1
-    override-build: |
+      # Third party licenses
+      cd python
+      cp third_party/pip-licenses.py pip-licenses.py
+      pip install --no-cache-dir tomli
+      mkdir -p third_party/library && python3 pip-licenses.py
+      mkdir -p ${CRAFT_PART_INSTALL}/third_party
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
