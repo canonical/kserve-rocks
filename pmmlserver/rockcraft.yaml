@@ -1,4 +1,4 @@
-# Based on https://github.com/kserve/kserve/blob/v0.14.1/python/pmml.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/pmml.Dockerfile
 # 
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
 # This rock is implemented with some atypical patterns due to the native of the upstream
