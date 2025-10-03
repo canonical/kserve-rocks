@@ -68,7 +68,6 @@ parts:
       # Generate third-party licenses
       cd python
       cp third_party/pip-licenses.py pip-licenses.py
-      # TODO: Remove this when upgrading to python 3.11+
       pip install --no-cache-dir tomli
       mkdir -p third_party/library && python3 pip-licenses.py
       mkdir ${CRAFT_PART_INSTALL}/third_party
