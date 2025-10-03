@@ -1,4 +1,4 @@
-# Based on https://github.com/kserve/kserve/blob/v0.14.1/python/sklearn.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/sklearn.Dockerfile
 # 
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
 # This rock is implemented with some atypical patterns due to the native of the upstream
@@ -6,7 +6,7 @@
 name: sklearnserver
 summary: sklearn server for Kserve deployments
 description: "Kserve sklearn server"
-version: "0.14.1"
+version: "0.15.2"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -17,7 +17,7 @@ services:
     override: replace
     summary: "sklearn server service"
     startup: enabled
-    command: "python -m sklearnserver [ ]"
+    command: "python -m sklearnserver [ dummy-arguments ]"
 entrypoint-service: sklearnserver
 
 parts:
@@ -33,7 +33,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.14.1
+    source-tag: v0.15.2
     build-packages:
       - build-essential
       - libgomp1
@@ -65,13 +65,10 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
       ln -s /usr/bin/python3.11 $CRAFT_PART_INSTALL/usr/bin/python
 
-  # Copy licenses
-  third-party:
-    plugin: nil
-    after: [python]
-    source: https://github.com/kserve/kserve.git
-    source-subdir: python
-    source-tag: v0.14.1
-    override-build: |
-      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
-
+      # Generate third-party licenses
+      cd python
+      cp third_party/pip-licenses.py pip-licenses.py
+      pip install --no-cache-dir tomli
+      mkdir -p third_party/library && python3 pip-licenses.py
+      mkdir ${CRAFT_PART_INSTALL}/third_party
+      cp -r third_party/ ${CRAFT_PART_INSTALL}/third_party
