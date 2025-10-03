@@ -73,4 +73,3 @@ parts:
       mkdir -p third_party/library && python3 pip-licenses.py
       mkdir ${CRAFT_PART_INSTALL}/third_party
       cp -r third_party/ ${CRAFT_PART_INSTALL}/third_party
-      cd ..
