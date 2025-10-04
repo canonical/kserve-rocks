@@ -1,11 +1,11 @@
-# Based on https://github.com/kserve/kserve/blob/v0.14.1/python/storage-initializer.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/storage-initializer.Dockerfile
 #
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
 # This rock is implemented with some atypical patterns due to the native of the upstream
 name: storage-initializer
 summary: Storage initializer for Kserve deployments
 description: "Kserve storage initializer"
-version: "0.14.1"
+version: "0.15.2"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -16,7 +16,7 @@ services:
     override: replace
     summary: "Kserve storage initializer service"
     startup: enabled
-    command: "/storage-initializer/scripts/initializer-entrypoint [ ]"
+    command: "/storage-initializer/scripts/initializer-entrypoint [ dummy-arguments ]"
     on-success: shutdown
     on-failure: shutdown
     working-dir: /work/
@@ -32,7 +32,7 @@ parts:
   python:
     plugin: nil
     source: https://github.com/kserve/kserve.git
-    source-tag: v0.14.1
+    source-tag: v0.15.2
     build-packages:
     - python3.11
     # Needed to build wheel for requests-kerberos
@@ -78,19 +78,18 @@ parts:
       chmod +x ./python/storage-initializer/scripts/initializer-entrypoint
       cp -r ./python/storage-initializer $CRAFT_PART_INSTALL/storage-initializer
 
-  copy-licenses:
-    plugin: nil
-    after: [python]
-    source: https://github.com/kserve/kserve.git
-    source-subdir: python
-    source-tag: v0.14.1
-    override-build: |
+      # Generate third-party licenses
+      cd python
+      cp third_party/pip-licenses.py pip-licenses.py
+      pip install --no-cache-dir tomli
+      mkdir -p third_party/library && python3 pip-licenses.py
+      mkdir -p ${CRAFT_PART_INSTALL}/third_party
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
 
   create-work-dir:
-    # Create a directory that the user has write access to.  This is the default
+    # Create a directory that the user has write access to. This is the default
     # root location for the script
-    # Note: If any other part writes to this dir, here's part must execute after that
+    # Note: If any other part writes to this dir, this part must execute after that
     #       otherwise the other part's operations will clobber the permissions set here
     plugin: nil
     override-build: |
