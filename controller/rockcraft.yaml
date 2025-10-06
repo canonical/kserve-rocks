@@ -1,8 +1,8 @@
-# Based on https://github.com/kserve/kserve/blob/v0.14.1/Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.15.2/Dockerfile
 name: kserve-controller
 summary: KServe controller
 description: "KServe controller manager"
-version: "0.14.1"
+version: "0.15.2"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -29,9 +29,9 @@ parts:
     plugin: go
     source: https://github.com/kserve/kserve
     source-type: git
-    source-tag: v0.14.1
+    source-tag: v0.15.2
     build-snaps:
-      - go/1.22/stable
+      - go/1.24/stable
     build-environment:
       - CGO_ENABLED: "0"
       - GOOS: linux
@@ -51,6 +51,13 @@ parts:
       # Build
       go build -a -o manager ./cmd/manager
 
+      # Generate third-party licenses
+      cp -r $CRAFT_PART_SRC/LICENSE ./LICENSE
+      go install github.com/google/go-licenses@latest
+      $GOBIN/go-licenses check ./cmd/... ./pkg/... --disallowed_types="forbidden,unknown"
+      $GOBIN/go-licenses save --save_path third_party/library ./cmd/manager
+
       # Copy the files to the install directory
-      cp -r $CRAFT_PART_SRC/third_party/ $CRAFT_PART_INSTALL/third_party/
+      mkdir $CRAFT_PART_INSTALL/third_party
+      cp -r third_party $CRAFT_PART_INSTALL/third_party/
       cp -r manager $CRAFT_PART_INSTALL/manager
