@@ -72,3 +72,4 @@ parts:
       pip install --no-cache-dir tomli
       mkdir -p third_party/library && python3 pip-licenses.py
       mkdir -p ${CRAFT_PART_INSTALL}/third_party
+      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
