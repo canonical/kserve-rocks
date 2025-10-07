@@ -39,7 +39,7 @@ parts:
     - python3.11-venv
     stage-packages:
     # Packages required for the rock to work
-    # https://github.com/kserve/kserve/blob/v0.15.2/python/paddle.Dockerfile#L39
+    # https://github.com/kserve/kserve/blob/v0.15.2/python/paddle.Dockerfile#L43
     - libgomp1
     overlay-packages:
     - python3.11
