@@ -1,4 +1,4 @@
-# Based on https://github.com/kserve/kserve/blob/v0.14.1/python/lgb.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/lgb.Dockerfile
 # 
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
 # This rock is implemented with some atypical patterns due to the native of the upstream
@@ -6,7 +6,7 @@
 name: lgbserver
 summary: LightGBM server for Kserve deployments
 description: "Kserve LightGBM server"
-version: "0.14.1"
+version: "0.15.2"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -17,7 +17,7 @@ services:
     override: replace
     summary: "LightGBM server service"
     startup: enabled
-    command: "python -m lgbserver [ ]"
+    command: "python -m lgbserver [ dummy-arguments ]"
 entrypoint-service: lgbserver
 
 parts:
@@ -33,7 +33,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.14.1
+    source-tag: v0.15.2
     build-packages:
     - python3.11
     - python3.11-venv
@@ -41,7 +41,7 @@ parts:
     - python3.11
     stage-packages:
     # Packages required for the rock to work
-    # https://github.com/kserve/kserve/blob/v0.14.1/python/lgb.Dockerfile#L39
+    # https://github.com/kserve/kserve/blob/v0.15.2/python/lgb.Dockerfile#L43
     - libgomp1
     override-build: |
       # Ensure Python 3.11 is the default version
@@ -66,13 +66,10 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
       ln -s /usr/bin/python3.11 $CRAFT_PART_INSTALL/usr/bin/python
 
-  # Copy licenses
-  third-party:
-    plugin: nil
-    after: [python]
-    source: https://github.com/kserve/kserve.git
-    source-subdir: python
-    source-tag: v0.14.1
-    override-build: |
+      # Third party licenses
+      cd python
+      cp third_party/pip-licenses.py pip-licenses.py
+      pip install --no-cache-dir tomli
+      mkdir -p third_party/library && python3 pip-licenses.py
+      mkdir -p ${CRAFT_PART_INSTALL}/third_party
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
-
