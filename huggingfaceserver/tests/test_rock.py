@@ -26,7 +26,7 @@ def test_rock():
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /usr/local/lib/python3.10/dist-packages/huggingfaceserver",
+            "ls -la /usr/local/lib/python3.12/dist-packages/huggingfaceserver",
         ],
         check=True,
     )
@@ -38,7 +38,7 @@ def test_rock():
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /usr/local/lib/python3.10/dist-packages/kserve",
+            "ls -la /usr/local/lib/python3.12/dist-packages/kserve",
         ],
         check=True,
     )
