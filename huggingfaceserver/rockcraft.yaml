@@ -1,26 +1,26 @@
-# Based on https://github.com/kserve/kserve/blob/v0.14.1/python/huggingface_server.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/huggingface_server.Dockerfile
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
-# This rock is implemented with some atypical patterns due to the native of the upstream
-# Dockerfile.
+# This rock uses a few atypical patterns to mirror the upstream Dockerfile layout.
+
 name: huggingfaceserver
 summary: Huggingface server for Kserve deployments
 description: "Kserve Huggingface server"
-version: "0.14.1"
+version: "0.15.2"
 license: Apache-2.0
 base: ubuntu@22.04
 run-user: _daemon_
-  
+
 platforms:
-    amd64:
+  amd64:
 
 services:
   huggingfaceserver:
     override: replace
     summary: "Huggingface server service"
     startup: enabled
-    command: "python -m huggingfaceserver [ ]"
+    command: "python -m huggingfaceserver [ dummy-arguments ]"
     environment:
-      PYTHONPATH: "/usr/local/lib/python3.10/dist-packages"
+      PYTHONPATH: "/usr/local/lib/python3.12/dist-packages"
       HF_HOME: "/tmp/huggingface"
       SAFETENSORS_FAST_GPU: "1"
       HF_HUB_DISABLE_TELEMETRY: "1"
@@ -29,10 +29,17 @@ services:
       NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
       PATH: "/usr/local/nvidia/bin:/usr/local/cuda/bin:$PATH"
-      LD_LIBRARY_PATH: "/usr/local/cuda-12.4/lib:/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH"
-      VLLM_NCCL_SO_PATH: "/usr/local/lib/python3.10/dist-packages/nvidia/nccl/lib/libnccl.so.2"
+      # Include CUDA "compat" (ships libcuda.so.*) and common NVIDIA lib paths first.
+      LD_LIBRARY_PATH: "/usr/local/cuda-12.4/compat:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-12.4/lib:/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH"
+      # vLLM looks here when NCCL is vendored via PyPI wheels.
+      VLLM_NCCL_SO_PATH: "/usr/local/lib/python3.12/dist-packages/nvidia/nccl/lib/libnccl.so.2"
       VLLM_WORKER_MULTIPROC_METHOD: "spawn"
 entrypoint-service: huggingfaceserver
+
+package-repositories:
+  - type: apt
+    ppa: deadsnakes/ppa
+    priority: always
 
 parts:
   security-team-requirement:
@@ -42,81 +49,152 @@ parts:
       (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
       dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
-
-  python:
+  
+  python-and-cuda:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.14.1
+    source-tag: v0.15.2
     overlay-packages:
-      - python3.10  
-      # Including python3-pip here means pip also gets primed for the final rock
-      - python3-pip
+      # Runtime deps commonly required by CV/transformers stacks.
+      - ffmpeg
+      - libsm6
+      - libxext6
+      - libgl1
+      - gcc
+      - libibverbs-dev
+      # Ship a system Python in the final image
+      - python3.12
     build-packages:
       - build-essential
-      - libgomp1
       - wget
+      - curl
+      - software-properties-common
+      - ca-certificates
+      - git
     build-environment:
       - CUDA: "12.4"
+      - CUDA_VERSION: "12.4.1"
+      - WORKSPACE_DIR: "/kserve-workspace"
+      - VENV_PATH: "prod_venv"
+      - PYTHON_VERSION: "3.12"
       - LD_LIBRARY_PATH: "/usr/local/cuda-12.4/lib:/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH"
     override-build: |
-      # Add NVIDIA repository key and update the package list
+
+      set -eux
+
+      # --- CUDA repo & minimal runtime (mirrors upstream base/devel images) ---
       wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
       dpkg -i cuda-keyring_1.1-1_all.deb
       apt-get -yq update
-    
-      # Install CUDA toolkit
-      apt-get -yq install --no-install-recommends cuda-keyring=1.1-1 cuda-compat-12-4=550.54.15-1 cuda-cudart-12-4=12.4.127-1 cuda-toolkit-12-4-config-common=12.4.127-1 cuda-toolkit-12-config-common=12.4.127-1 cuda-toolkit-config-common=12.4.127-1
 
-      # Copy cuda libs
-      mkdir -p $CRAFT_PART_INSTALL/usr/local
-      cp -a /usr/local/cuda-12.4 $CRAFT_PART_INSTALL/usr/local/
-    
-      # Copy dpkg and apt information to the final image
+      apt-get -yq install --no-install-recommends \
+        cuda-compat-12-4=550.54.15-1 \
+        cuda-cudart-12-4=12.4.127-1 \
+        cuda-toolkit-12-4-config-common=12.4.127-1 \
+        cuda-toolkit-12-config-common=12.4.127-1 \
+        cuda-toolkit-config-common=12.4.127-1
+
+      # Promote CUDA tree into primed image.
+      mkdir -p "$CRAFT_PART_INSTALL/usr/local"
+      cp -a /usr/local/cuda-12.4 "$CRAFT_PART_INSTALL/usr/local/"
+
+      # Expose libcuda in a standard path for runtimes that don't mount the host lib.
+      mkdir -p "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu"
+      ln -sf /usr/local/cuda-12.4/compat/libcuda.so.1 \
+        "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libcuda.so.1"
+
+      # Copy dpkg/apt metadata to support later apt operations inside the final image.
       mkdir -p $CRAFT_PART_INSTALL/var/lib/dpkg
-      cp -a /var/lib/dpkg/* $CRAFT_PART_INSTALL/var/lib/dpkg/
+      cp -a /var/lib/dpkg/* "$CRAFT_PART_INSTALL/var/lib/dpkg/" || true
+      rm -f \
+        "$CRAFT_PART_INSTALL/var/lib/dpkg/info/libelf1:amd64.list" \
+        "$CRAFT_PART_INSTALL/var/lib/dpkg/info/libelf1:amd64.md5sums" \
+        "$CRAFT_PART_INSTALL/var/lib/dpkg/status" \
+        "$CRAFT_PART_INSTALL/var/lib/dpkg/status-old" \
+        "$CRAFT_PART_INSTALL/var/lib/dpkg/triggers/File" || true
 
       mkdir -p $CRAFT_PART_INSTALL/var/lib/apt/lists
-      cp -a /var/lib/apt/lists/* $CRAFT_PART_INSTALL/var/lib/apt/lists/
+      cp -a /var/lib/apt/lists/* "$CRAFT_PART_INSTALL/var/lib/apt/lists/" || true
     
       mkdir -p $CRAFT_PART_INSTALL/etc/apt
-      cp -a /etc/apt/sources.list.d $CRAFT_PART_INSTALL/etc/apt/
-      cp -a /etc/apt/trusted.gpg* $CRAFT_PART_INSTALL/etc/apt/
-    
-      # Clean up the apt cache
+      cp -a /etc/apt/sources.list.d "$CRAFT_PART_INSTALL/etc/apt/" || true
+      cp -a /etc/apt/trusted.gpg* "$CRAFT_PART_INSTALL/etc/apt/" || true
+
+      # Clean apt cache to reduce size.
       apt-get clean
       rm -rf /var/lib/apt/lists/*
+
+      # --- Ensure Python 3.12 is the default during build so tools auto-pick it ---
+      add-apt-repository -y ppa:deadsnakes/ppa || true
+      apt-get -yq update
+      apt-get -yq install --no-install-recommends \
+        python3.12 python3.12-venv python3.12-dev python-is-python3
       
-      # Setup poetry
-      pip install --no-cache-dir poetry==1.8.3 vllm==0.6.1.post2
+      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 50
+      update-alternatives --set python3 /usr/bin/python3.12
+
+      # Bootstrap pip and Poetry (no venv: we copy site-packages into the primed image).
+      curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
+      pip install --no-cache-dir poetry==1.8.3
       poetry config virtualenvs.create false 
 
-      # Install the kserve package, this specific server package, and their dependencies.
+      # Resolve Python deps via Poetry with a dummy pyproject matching the server needs.
       mkdir -p ./python_env_builddir
       cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
       (cd python_env_builddir && poetry install --no-interaction --no-root)
 
-      # Promote the packages we've installed from the local env to the primed image
-      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages
-      cp -fr /usr/local/lib/python3.10/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.10/dist-packages/
+      # Extra runtime deps not captured by the dummy file.
+      pip install --no-cache-dir \
+        "vllm[runai,tensorizer,fastsafetensors]==0.8.5" \
+        "lmcache==0.2.1"
+
+      # Promote installed packages and shared data into the primed image.
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages
+      cp -fr /usr/local/lib/python3.12/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages/
 
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
       cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
 
-      # Ensure `python` is an executable command in our primed image by making
-      # a symbolic link
+      # Provide a generic `python` entry for convenience.
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
-      ln -s /usr/bin/python3.10 $CRAFT_PART_INSTALL/usr/bin/python
-      
-      rm -rf /root/.cache
-    
+      ln -s /usr/bin/python3.12 $CRAFT_PART_INSTALL/usr/bin/python
 
-  # Copy licenses
-  third-party:
+      rm -rf /root/.cache
+  
+  third-party-licenses:
     plugin: nil
-    after: [python]
+    after: [ python-and-cuda ]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.14.1
+    source-tag: v0.15.2
     override-build: |
+
+      set -eux
+
+      # NOTE:
+      # - This step is split into its own part so license harvesting failures (e.g. packages
+      #   without pip-style license files) do not fail the CUDA/Python build above.
+      # - It mirrors the upstream Dockerfile’s “third_party” step and keeps the main part lean.
+      # - Re-establishing Python 3.12 here avoids any accidental interpreter/version drift.
+
+      # Ensure Python 3.12 tooling is available in this part as well.
+      add-apt-repository -y ppa:deadsnakes/ppa || true
+      apt-get -yq update
+      apt-get -yq install --no-install-recommends \
+        python3.12 python3.12-venv python3.12-dev python-is-python3
+      
+      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 50
+      update-alternatives --set python3 /usr/bin/python3.12
+
+      curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
+
+      # Generate third-party license bundle.
+      cd python
+      cp third_party/pip-licenses.py pip-licenses.py
+      pip install --no-cache-dir tomli
+      mkdir -p third_party/library && python3.12 pip-licenses.py
+
+      # Stage third_party outputs into the final image.
+      mkdir -p ${CRAFT_PART_INSTALL}/third_party
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
