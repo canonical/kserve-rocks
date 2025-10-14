@@ -1,0 +1,129 @@
+# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/huggingface_server_cpu.Dockerfile
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+
+name: huggingfaceserver-cpu
+summary: HuggingFace server for KServe deployments (CPU-only)
+description: "KServe HuggingFace server with PyTorch CPU + IPEX + vLLM (CPU)."
+version: "0.15.2"
+license: Apache-2.0
+base: ubuntu@22.04
+platforms:
+  amd64:
+
+run-user: _daemon_
+
+services:
+  huggingfaceserver:
+    override: replace
+    summary: "HuggingFace server (CPU)"
+    startup: enabled
+    command: "python -m huggingfaceserver [ dummy-arguments ]"
+    environment:
+      HF_HOME: "/tmp/huggingface"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      LD_PRELOAD: "/usr/lib/x86_64-linux-gnu/libtcmalloc.so.4:/usr/lib/x86_64-linux-gnu/libjemalloc.so.2"
+
+entrypoint-service: huggingfaceserver
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  python:
+    plugin: nil
+    source: https://github.com/kserve/kserve.git
+    source-subdir: python
+    source-tag: v0.15.2
+    build-packages:
+      - python3.10
+      - python3.10-venv
+      - python3.10-dev
+      - build-essential
+      - gcc-12
+      - g++-12
+      - git
+      - libnuma-dev
+      - pkg-config
+
+    overlay-packages:
+      - python3.10
+      - google-perftools
+      - libjemalloc2
+      - libnuma1
+      - numactl
+      - libgl1
+      - libglib2.0-0
+
+    override-build: |
+      # Match upstream: prefer GCC/G++ 12
+      update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 10 --slave /usr/bin/g++ g++ /usr/bin/g++-12
+
+      python3 -m pip install --upgrade pip setuptools poetry==1.8.3
+      poetry config virtualenvs.create false
+
+      mkdir -p ./python_env_builddir
+      cp -rf "$CRAFT_PROJECT_DIR/dummy_pyproject.toml" ./python_env_builddir/pyproject.toml
+
+      TORCH_VERSION="2.6.0"
+      TORCHVISION_VERSION="0.21.0"
+      TORCH_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
+      IPEX_EXTRA_INDEX_URL="https://pytorch-extension.intel.com/release-whl/stable/cpu/us/"
+
+      pushd python_env_builddir
+        # Ensure path deps resolve to the checked-out repo paths
+        # dummy pyproject uses: ../python/kserve and ../python/huggingfaceserver
+        # Add PyTorch CPU index and pin torch family
+        poetry source add --priority=supplemental pytorch-cpu "${TORCH_EXTRA_INDEX_URL}"
+        poetry add --source pytorch-cpu \
+          "torch~=${TORCH_VERSION}" \
+          "torchaudio~=${TORCH_VERSION}" \
+          "torchvision~=${TORCHVISION_VERSION}"
+
+        poetry lock
+        poetry install --no-interaction --no-root
+      popd
+
+      # Intel Extension for PyTorch + OpenMP from extra indexes
+      python3 -m pip install --no-cache-dir \
+        --extra-index-url "${TORCH_EXTRA_INDEX_URL}" \
+        --extra-index-url "${IPEX_EXTRA_INDEX_URL}" \
+        "intel_extension_for_pytorch~=${TORCH_VERSION}" \
+        intel-openmp
+
+      # vLLM (CPU) build
+      VLLM_VERSION="0.8.5"
+      export VLLM_CPU_DISABLE_AVX512="true"
+      export VLLM_CPU_AVX512BF16="1"
+      export VLLM_TARGET_DEVICE="cpu"
+
+      git clone --single-branch --branch "v${VLLM_VERSION}" https://github.com/vllm-project/vllm.git
+      pushd vllm
+        python3 -m pip install --no-cache-dir -r requirements/build.txt
+        python3 -m pip install --no-cache-dir -r requirements/cpu.txt
+        python3 setup.py bdist_wheel
+        python3 -m pip install --no-cache-dir dist/vllm-${VLLM_VERSION}*.whl
+      popd
+
+      # Third-party licenses (mirror upstream)
+      cd python
+      cp -f third_party/pip-licenses.py ./pip-licenses.py
+      python3 -m pip install --no-cache-dir tomli
+      mkdir -p third_party/library
+      python3 pip-licenses.py
+
+      # Promote installed packages into the primed image
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/local/lib/python3.10/dist-packages
+      cp -fr /usr/local/lib/python3.10/dist-packages/* ${CRAFT_PART_INSTALL}/usr/local/lib/python3.10/dist-packages/ || true
+
+      # Ensure `python` exists in the primed image
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/bin
+      ln -sf /usr/bin/python3.10 ${CRAFT_PART_INSTALL}/usr/bin/python
+
+      # Third-party licenses payload
+      mkdir -p ${CRAFT_PART_INSTALL}/third_party
+      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party

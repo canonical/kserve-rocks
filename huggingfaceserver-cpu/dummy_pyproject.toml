@@ -1,0 +1,12 @@
+[tool.poetry]
+name = "workaround-for-editable-install"
+version = "0.0.1"
+description = ""
+authors = ["none"]
+
+[tool.poetry.dependencies]
+# This range should match that used upstream: https://github.com/kserve/kserve/blob/v0.15.2/python/pmmlserver/pyproject.toml#L13
+python = ">=3.9,<3.13"
+kserve = { path = "../python/kserve", develop = false }
+huggingfaceserver = { path = "../python/huggingfaceserver", develop = false }
+
