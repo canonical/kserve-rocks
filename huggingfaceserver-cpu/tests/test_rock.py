@@ -1,10 +1,11 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 import random
 import pytest
 import string
 import subprocess
+import shlex
 
 from charmed_kubeflow_chisme.rock import CheckRock
 
@@ -17,40 +18,22 @@ def test_rock():
     rock_version = check_rock.get_version()
     LOCAL_ROCK_IMAGE = f"{rock_image}:{rock_version}"
 
-    # assert we have the expected files
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "--entrypoint",
-            "/bin/bash",
-            LOCAL_ROCK_IMAGE,
-            "-c",
-            "ls -la /usr/local/lib/python3.10/dist-packages/huggingfaceserver",
-        ],
-        check=True,
-    )
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "--entrypoint",
-            "/bin/bash",
-            LOCAL_ROCK_IMAGE,
-            "-c",
-            "ls -la /usr/local/lib/python3.10/dist-packages/kserve",
-        ],
-        check=True,
-    )
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "--entrypoint",
-            "/bin/bash",
-            LOCAL_ROCK_IMAGE,
-            "-c",
-            "ls -la /third_party",
-        ],
-        check=True,
-    )
+    paths = [
+        "/usr/local/lib/python3.10/dist-packages/huggingfaceserver",
+        "/usr/local/lib/python3.10/dist-packages/kserve",
+        "/third_party",
+    ]
+
+    for p in paths:
+        subprocess.run(
+            [
+                "docker",
+                "run",
+                "--entrypoint",
+                "/bin/bash",
+                LOCAL_ROCK_IMAGE,
+                "-c",
+                f"ls -la {shlex.quote(p)}",
+            ],
+            check=True,
+        )
