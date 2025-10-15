@@ -5,7 +5,7 @@ description = ""
 authors = ["none"]
 
 [tool.poetry.dependencies]
-# This range should match that used upstream: https://github.com/kserve/kserve/blob/v0.14.1/python/huggingfaceserver/pyproject.toml#L13
+# This range should match that used upstream: https://github.com/kserve/kserve/blob/v0.15.2/python/huggingfaceserver/pyproject.toml#L11
 python = ">=3.9,<3.13"
 kserve = { path = "../python/kserve", develop = false }
 huggingfaceserver = { path = "../python/huggingfaceserver", develop = false }
