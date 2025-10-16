@@ -40,9 +40,6 @@ parts:
     source-subdir: python
     source-tag: v0.15.2
     build-packages:
-      - python3.10
-      - python3.10-venv
-      - python3.10-dev
       - build-essential
       - gcc-12
       - g++-12
