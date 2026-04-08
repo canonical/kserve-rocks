@@ -1,11 +1,11 @@
-# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/storage-initializer.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/storage-initializer.Dockerfile
 #
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
-# This rock is implemented with some atypical patterns due to the native of the upstream
+# This rock is implemented with some atypical patterns due to the nature of the upstream
 name: storage-initializer
 summary: Storage initializer for Kserve deployments
 description: "Kserve storage initializer"
-version: "0.15.2"
+version: "0.17.0"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -32,7 +32,7 @@ parts:
   python:
     plugin: nil
     source: https://github.com/kserve/kserve.git
-    source-tag: v0.15.2
+    source-tag: v0.17.0
     build-packages:
     - python3.11
     # Needed to build wheel for requests-kerberos
@@ -47,19 +47,27 @@ parts:
       # Ensure Python 3.11 is the default version
       update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
       update-alternatives --set python3 /usr/bin/python3.11
-      
-      # Setup poetry
-      python3 -m pip install --upgrade pip setuptools poetry==1.8.3
-      poetry config virtualenvs.create false 
 
-      # Install the kserve package, this specific server package, and their dependencies.
-      mkdir -p ./python_env_builddir
-      cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
-      (cd python_env_builddir && poetry install --no-interaction --no-root)
+      # Install uv
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+      export PATH="/root/.local/bin:$PATH"
 
-      # Promote the packages we've installed from the local env to the primed image
+      # Setup virtual environment
+      uv venv ./python_venv
+      export VIRTUAL_ENV=$PWD/python_venv
+      export PATH="$VIRTUAL_ENV/bin:$PATH"
+
+      # Install storage
+      cd python/storage && uv sync --active --no-cache && cd ../..
+      cd python/storage && uv pip install . --no-cache && cd ../..
+
+      # Promote the packages we've installed from the virtual env to the primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
-      cp -fr /usr/local/lib/python3.11/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr ./python_venv/lib/python3.11/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+
+      # Mirror the upstream runtime layout. The sklearnserver entrypoint relies on the
+      # source tree being present at /sklearnserver via PYTHONPATH.
+      cp -fr python/storage $CRAFT_PART_INSTALL/storage
 
       # TODO: why do we need this?
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
@@ -72,7 +80,7 @@ parts:
       ln -sf /usr/bin/python3.11 $CRAFT_PART_INSTALL/usr/bin/python3
 
       # Install additional packages
-      python3 -m pip install --no-cache-dir krbcontext==0.10 hdfs~=2.6.0 requests-kerberos==0.14.0
+      uv pip install --no-cache krbcontext==0.10 hdfs~=2.6.0 requests-kerberos==0.14.0
 
       # Copy the storage-initializer scripts
       chmod +x ./python/storage-initializer/scripts/initializer-entrypoint
@@ -81,7 +89,7 @@ parts:
       # Generate third-party licenses
       cd python
       cp third_party/pip-licenses.py pip-licenses.py
-      pip install --no-cache-dir tomli
+      uv pip install --no-cache-dir tomli requests
       mkdir -p third_party/library && python3 pip-licenses.py
       mkdir -p ${CRAFT_PART_INSTALL}/third_party
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
