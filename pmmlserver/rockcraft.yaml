@@ -65,12 +65,23 @@ parts:
       cd python/storage && uv sync --active --no-cache && cd ../..
       cd python/storage && uv pip install . --no-cache && cd ../..
       
-      # Install pmmlserver
+      # Install pmmlserver - use uv sync for dependencies, then pip install for the package
       cd python/pmmlserver && uv sync --active --no-cache && cd ../..
+      cd python/pmmlserver && uv pip install . --no-cache && cd ../..
 
       # Promote the packages we've installed from the virtual env to the primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages
       cp -fr ./python_venv/lib/python3.12/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages/
+
+      # Mirror the upstream runtime layout. The PMML entrypoint relies on the
+      # source tree being present at /pmmlserver via PYTHONPATH.
+      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
+      cp -fr python/storage $CRAFT_PART_INSTALL/storage
+      cp -fr python/pmmlserver $CRAFT_PART_INSTALL/pmmlserver
+
+      # Ensure the pmmlserver module is importable even if uv leaves it as a
+      # workspace source dependency rather than a regular site-packages install.
+      cp -fr python/pmmlserver/pmmlserver $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages/
 
       # Ensure `python` is an executable command in our primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
