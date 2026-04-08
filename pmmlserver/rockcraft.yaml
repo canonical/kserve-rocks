@@ -1,14 +1,14 @@
-# Based on https://github.com/kserve/kserve/blob/v0.16.0/python/pmml.Dockerfile
-# 
-# See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
+# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/pmml.Dockerfile
+#
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
 # This rock is implemented with some atypical patterns due to the nature of the upstream
 # Dockerfile.
 name: pmmlserver
 summary: Pmml server for Kserve deployments
 description: "Kserve Pmml server"
-version: "0.16.0"
+version: "0.17.0"
 license: Apache-2.0
-base: ubuntu@22.04
+base: ubuntu@24.04
 platforms:
     amd64:
 run-user: _daemon_
@@ -28,30 +28,26 @@ parts:
     override-build: |
       mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
       (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
-      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-24.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
 
   python:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.16.0
+    source-tag: v0.17.0
     build-packages:
-    - python3.11
-    - python3.11-venv
+    - python3.12
+    - python3.12-venv
     - python3-pip
     - openjdk-21-jdk
     - curl
     - gcc
     - build-essential
     overlay-packages:
-    - python3.11
+    - python3.12
     - openjdk-21-jdk
     override-build: |
-      # Ensure Python 3.11 is the default version
-      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-      update-alternatives --set python3 /usr/bin/python3.11
-
       # Install uv
       curl -LsSf https://astral.sh/uv/install.sh | sh
       export PATH="/root/.local/bin:$PATH"
@@ -69,17 +65,16 @@ parts:
       cd python/storage && uv sync --active --no-cache && cd ../..
       cd python/storage && uv pip install . --no-cache && cd ../..
       
-      # Install pmmlserver - use uv sync for dependencies, then pip install for the package
+      # Install pmmlserver
       cd python/pmmlserver && uv sync --active --no-cache && cd ../..
-      cd python/pmmlserver && uv pip install . --no-cache && cd ../..
 
       # Promote the packages we've installed from the virtual env to the primed image
-      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
-      cp -fr ./python_venv/lib/python3.11/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages
+      cp -fr ./python_venv/lib/python3.12/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages/
 
       # Ensure `python` is an executable command in our primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
-      ln -s /usr/bin/python3.11 $CRAFT_PART_INSTALL/usr/bin/python
+      ln -s /usr/bin/python3.12 $CRAFT_PART_INSTALL/usr/bin/python
 
       # Move Py4J jar file to $CRAFT_PART_INSTALL
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
