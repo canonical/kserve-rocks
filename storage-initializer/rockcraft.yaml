@@ -65,8 +65,8 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
       cp -fr ./python_venv/lib/python3.11/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
-      # Mirror the upstream runtime layout. The sklearnserver entrypoint relies on the
-      # source tree being present at /sklearnserver via PYTHONPATH.
+      # Mirror the upstream runtime layout. The storage entrypoint relies on the
+      # source tree being present at /storage via PYTHONPATH.
       cp -fr python/storage $CRAFT_PART_INSTALL/storage
 
       # TODO: why do we need this?
