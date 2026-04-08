@@ -42,6 +42,10 @@ parts:
       - python3.11
       - python3.11-venv
       - python3-venv
+      - python3-pip
+      - curl
+      - gcc
+      - build-essential
     overlay-packages:
       - python3.11
     override-build: |
@@ -65,10 +69,21 @@ parts:
       
       # Install sklearnserver - use uv sync for dependencies, then pip install for the package
       cd python/sklearnserver && uv sync --active --no-cache && cd ../..
+      cd python/sklearnserver && uv pip install . --no-cache && cd ../..
 
       # Promote the packages we've installed from the virtual env to the primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
-      cp -fr ./python_venv/lib/python3.11/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr ./python_venv/lib/python3.11/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+
+      # Mirror the upstream runtime layout. The sklearnserver entrypoint relies on the
+      # source tree being present at /sklearnserver via PYTHONPATH.
+      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
+      cp -fr python/storage $CRAFT_PART_INSTALL/storage
+      cp -fr python/sklearnserver $CRAFT_PART_INSTALL/sklearnserver
+
+      # Ensure the sklearnserver module is importable even if uv leaves it as a
+      # workspace source dependency rather than a regular site-packages install.
+      cp -fr python/sklearnserver/sklearnserver $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
       # Ensure `python` is an executable command in our primed image by making
       # a symbolic link
@@ -78,7 +93,7 @@ parts:
       # Generate third-party licenses
       cd python
       cp third_party/pip-licenses.py pip-licenses.py
-      uv pip install --no-cache-dir tomli
+      uv pip install --no-cache-dir tomli requests
       mkdir -p third_party/library && python3 pip-licenses.py
       mkdir ${CRAFT_PART_INSTALL}/third_party
       cp -r third_party/ ${CRAFT_PART_INSTALL}/third_party
