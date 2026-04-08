@@ -68,7 +68,7 @@ parts:
 
       # Promote the packages we've installed from the virtual env to the primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
-      cp -fr ./python_venv/lib/python3.11/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr ./python_venv/lib/python3.11/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
       # Ensure `python` is an executable command in our primed image by making
       # a symbolic link
