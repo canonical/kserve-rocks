@@ -45,6 +45,10 @@ parts:
     overlay-packages:
       - python3.11
     override-build: |
+      # Use Python 3.11
+      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+      update-alternatives --set python3 /usr/bin/python3.11
+
       # Install uv
       curl -LsSf https://astral.sh/uv/install.sh | sh
       export PATH="/root/.local/bin:$PATH"
