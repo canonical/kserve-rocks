@@ -1,12 +1,12 @@
-# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/paddle.Dockerfile
-# 
-# See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
-# This rock is implemented with some atypical patterns due to the native of the upstream
+# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/paddle.Dockerfile
+#
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+# This rock is implemented with some atypical patterns due to the nature of the upstream
 # Dockerfile.
 name: paddleserver
 summary: Paddle server for Kserve deployments
 description: "Kserve Paddle server"
-version: "0.15.2"
+version: "0.17.0"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -18,6 +18,8 @@ services:
     summary: "Paddle server service"
     startup: enabled
     command: "python -m paddleserver [ dummy-arguments ]"
+    environment:
+      PYTHONPATH: /paddleserver
 entrypoint-service: paddleserver
 
 parts:
@@ -33,33 +35,53 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.15.2
+    source-tag: v0.17.0
     build-packages:
     - python3.11
+    - python3.11-dev
     - python3.11-venv
+    - python3-pip
+    - curl
+    - build-essential
     stage-packages:
-    # Packages required for the rock to work
-    # https://github.com/kserve/kserve/blob/v0.15.2/python/paddle.Dockerfile#L43
     - libgomp1
     overlay-packages:
     - python3.11
     override-build: |
-      # Ensure Python 3.11 is the default version
-      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-      update-alternatives --set python3 /usr/bin/python3.11
+      # Install uv
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+      export PATH="/root/.local/bin:$PATH"
 
-      # Setup poetry
-      python3 -m pip install --upgrade pip setuptools poetry==1.8.3
-      poetry config virtualenvs.create false 
+      # Setup virtual environment using Python 3.11 to match the upstream image
+      uv venv --python /usr/bin/python3.11 ./python_venv
+      export VIRTUAL_ENV=$PWD/python_venv
+      export PATH="$VIRTUAL_ENV/bin:$PATH"
 
-      # Install the kserve package, this specific server package, and their dependencies.
-      mkdir -p ./python_env_builddir
-      cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
-      (cd python_env_builddir && poetry install --no-interaction --no-root)
+      # Install the kserve, storage, and paddleserver packages with their dependencies using uv
+      # Install kserve
+      cd python/kserve && uv sync --active --no-cache && cd ../..
 
-      # Promote the packages we've installed from the local env to the primed image
+      # Install storage
+      cd python/storage && uv sync --active --no-cache && cd ../..
+      cd python/storage && uv pip install . --no-cache && cd ../..
+
+      # Install paddleserver - use uv sync for dependencies, then pip install for the package
+      cd python/paddleserver && uv sync --active --no-cache && cd ../..
+      cd python/paddleserver && uv pip install . --no-cache && cd ../..
+
+      # Promote the packages we've installed from the virtual env to the primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
-      cp -fr /usr/local/lib/python3.11/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr ./python_venv/lib/python3.11/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+
+      # Mirror the upstream runtime layout. The paddle entrypoint relies on the
+      # source tree being present at /paddleserver via PYTHONPATH.
+      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
+      cp -fr python/storage $CRAFT_PART_INSTALL/storage
+      cp -fr python/paddleserver $CRAFT_PART_INSTALL/paddleserver
+
+      # Ensure the paddleserver module is importable even if uv leaves it as a
+      # workspace source dependency rather than a regular site-packages install.
+      cp -fr python/paddleserver/paddleserver $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
       # Ensure `python` is an executable command in our primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
@@ -68,7 +90,7 @@ parts:
       # Third party licenses
       cd python
       cp third_party/pip-licenses.py pip-licenses.py
-      pip install --no-cache-dir tomli
+      uv pip install --no-cache-dir tomli requests
       mkdir -p third_party/library && python3 pip-licenses.py
       mkdir -p ${CRAFT_PART_INSTALL}/third_party
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
