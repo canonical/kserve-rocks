@@ -71,7 +71,7 @@ parts:
 
       # Ensure the modules are importable even if uv leaves them as workspace
       # source dependencies rather than regular dist-package installs.
-      cp -fr python/storage/storage $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/storage $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
       # TODO: why do we need this?
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
