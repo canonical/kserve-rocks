@@ -62,6 +62,7 @@ parts:
 
       # Install kserve
       cd python/kserve && uv sync --active --no-cache && cd ../..
+      cd python/kserve && uv pip install . --no-cache && cd ../..
 
       # Install storage  
       cd python/storage && uv sync --active --no-cache && cd ../..
@@ -81,8 +82,10 @@ parts:
       cp -fr python/storage $CRAFT_PART_INSTALL/storage
       cp -fr python/sklearnserver $CRAFT_PART_INSTALL/sklearnserver
 
-      # Ensure the sklearnserver module is importable even if uv leaves it as a
-      # workspace source dependency rather than a regular site-packages install.
+      # Ensure the modules are importable even if uv leaves them as workspace
+      # source dependencies rather than regular dist-package installs.
+      cp -fr python/kserve/kserve $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/storage/storage $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
       cp -fr python/sklearnserver/sklearnserver $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
       # Ensure `python` is an executable command in our primed image by making
