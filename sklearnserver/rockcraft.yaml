@@ -84,9 +84,9 @@ parts:
 
       # Ensure the modules are importable even if uv leaves them as workspace
       # source dependencies rather than regular dist-package installs.
-      cp -fr python/kserve/kserve $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
-      cp -fr python/storage/storage $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
-      cp -fr python/sklearnserver/sklearnserver $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/kserve $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/storage $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/sklearnserver $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
       # Ensure `python` is an executable command in our primed image by making
       # a symbolic link
