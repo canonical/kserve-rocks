@@ -87,9 +87,10 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/usr/bin/
       ln -s /usr/bin/python3.12 $CRAFT_PART_INSTALL/usr/bin/python
 
-      # Move Py4J jar file to $CRAFT_PART_INSTALL
+      # Move the Py4J jar from the build virtualenv into the runtime image.
+      # `py4j.java_gateway.find_jar_path()` expects it under /usr/local/share/py4j.
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
-      cp -fr /usr/local/share/py4j $CRAFT_PART_INSTALL/usr/local/share/ || true
+      cp -fr ./python_venv/share/py4j $CRAFT_PART_INSTALL/usr/local/share/
 
       # Third party licenses
       cd python
