@@ -111,3 +111,20 @@ def test_rock(rock_test_env):
         ],
         check=True,
     )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            (
+                "python -c \"import os, py4j.java_gateway as jg; "
+                "jar=jg.find_jar_path(); "
+                "print(jar); "
+                "assert jar and os.path.exists(jar), jar\""
+            ),
+        ],
+        check=True,
+    )
