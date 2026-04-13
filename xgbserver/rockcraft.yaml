@@ -100,7 +100,7 @@ parts:
     override-build: |
       cd python
       cp third_party/pip-licenses.py pip-licenses.py
-      uv pip install --no-cache-dir tomli requests
+      pip install --no-cache-dir tomli requests
       mkdir -p third_party/library && python3 pip-licenses.py
       mkdir -p ${CRAFT_PART_INSTALL}/third_party
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
