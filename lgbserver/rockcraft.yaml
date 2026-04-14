@@ -1,4 +1,4 @@
-# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/lgb.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/lgb.Dockerfile
 # 
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
 # This rock is implemented with some atypical patterns due to the native of the upstream
@@ -6,7 +6,7 @@
 name: lgbserver
 summary: LightGBM server for Kserve deployments
 description: "Kserve LightGBM server"
-version: "0.15.2"
+version: "0.17.0"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -18,6 +18,8 @@ services:
     summary: "LightGBM server service"
     startup: enabled
     command: "python -m lgbserver [ dummy-arguments ]"
+    environment:
+      PYTHONPATH: /lgbserver
 entrypoint-service: lgbserver
 
 parts:
@@ -33,7 +35,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.15.2
+    source-tag: v0.17.0
     build-packages:
     - python3.11
     - python3.11-venv
@@ -41,25 +43,51 @@ parts:
     - python3.11
     stage-packages:
     # Packages required for the rock to work
-    # https://github.com/kserve/kserve/blob/v0.15.2/python/lgb.Dockerfile#L43
+    # https://github.com/kserve/kserve/blob/v0.17.0/python/lgb.Dockerfile#L55-L58
     - libgomp1
     override-build: |
       # Ensure Python 3.11 is the default version
       update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
       update-alternatives --set python3 /usr/bin/python3.11
       
-      # Setup poetry
-      python3 -m pip install --upgrade pip setuptools poetry==1.8.3
-      poetry config virtualenvs.create false 
+      # Install uv
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+      export PATH="/root/.local/bin:$PATH"
 
-      # Install the kserve package, this specific server package, and their dependencies.
-      mkdir -p ./python_env_builddir
-      cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
-      (cd python_env_builddir && poetry install --no-interaction --no-root)
+      # Setup virtual environment
+      uv venv ./python_venv
+      export VIRTUAL_ENV=$PWD/python_venv
+      export PATH="$VIRTUAL_ENV/bin:$PATH"
 
-      # Promote the packages we've installed from the local env to the primed image
+      # Install the kserve, storage, and lgbserver packages with their dependencies using uv
+
+      # Install kserve
+      cd python/kserve && uv sync --active --no-cache && cd ../..
+      cd python/kserve && uv pip install . --no-cache && cd ../..
+
+      # Install storage  
+      cd python/storage && uv sync --active --no-cache && cd ../..
+      cd python/storage && uv pip install . --no-cache && cd ../..
+      
+      # Install lgbserver - use uv sync for dependencies, then pip install for the package
+      cd python/lgbserver && uv sync --active --no-cache && cd ../..
+      cd python/lgbserver && uv pip install . --no-cache && cd ../..
+
+      # Promote the packages we've installed from the virtual env to the primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
-      cp -fr /usr/local/lib/python3.11/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr ./python_venv/lib/python3.11/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+
+      # Mirror the upstream runtime layout. The lgbserver entrypoint relies on the
+      # source tree being present at /lgbserver via PYTHONPATH.
+      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
+      cp -fr python/storage $CRAFT_PART_INSTALL/storage
+      cp -fr python/lgbserver $CRAFT_PART_INSTALL/lgbserver
+
+      # Ensure the modules are importable even if uv leaves them as workspace
+      # source dependencies rather than regular dist-package installs.
+      cp -fr python/kserve $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/storage $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/lgbserver $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
       # Ensure `python` is an executable command in our primed image by making
       # a symbolic link
@@ -69,7 +97,7 @@ parts:
       # Third party licenses
       cd python
       cp third_party/pip-licenses.py pip-licenses.py
-      pip install --no-cache-dir tomli
+      pip install --no-cache-dir tomli requests
       mkdir -p third_party/library && python3 pip-licenses.py
       mkdir -p ${CRAFT_PART_INSTALL}/third_party
       cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
