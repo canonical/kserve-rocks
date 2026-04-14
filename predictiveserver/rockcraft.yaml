@@ -1,0 +1,117 @@
+# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/predictive.Dockerfile
+#
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+# This rock is implemented with some atypical patterns due to the nature of the upstream
+# Dockerfile.
+name: predictiveserver
+summary: Predictive server for Kserve deployments
+description: "Kserve predictive server"
+version: "0.17.0"
+license: Apache-2.0
+base: ubuntu@22.04
+platforms:
+    amd64:
+run-user: _daemon_
+services:
+  predictiveserver:
+    override: replace
+    summary: "Predictive server service"
+    startup: enabled
+    command: "python -m predictiveserver [ dummy-arguments ]"
+    environment:
+      PYTHONPATH: /predictiveserver:/sklearnserver:/xgbserver:/lgbserver
+entrypoint-service: predictiveserver
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  python:
+    plugin: nil
+    source: https://github.com/kserve/kserve.git
+    source-subdir: python
+    source-tag: v0.17.0
+    build-packages:
+      - build-essential
+      - curl
+      - gcc
+      - g++
+      - make
+      - libgomp1
+      - python3.11
+      - python3.11-dev
+      - python3.11-venv
+      - python3-pip
+    stage-packages:
+      - libgomp1
+    overlay-packages:
+      - python3.11
+    override-build: |
+      # Use Python 3.11 to match upstream behavior.
+      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+      update-alternatives --set python3 /usr/bin/python3.11
+
+      # Install uv.
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+      export PATH="/root/.local/bin:$PATH"
+
+      # Setup virtual environment.
+      uv venv --python /usr/bin/python3.11 ./python_venv
+      export VIRTUAL_ENV=$PWD/python_venv
+      export PATH="$VIRTUAL_ENV/bin:$PATH"
+
+      # Install packages in dependency order.
+      cd python/kserve && uv sync --active --no-cache && cd ../..
+      cd python/kserve && uv pip install . --no-cache && cd ../..
+
+      cd python/storage && uv sync --active --no-cache && cd ../..
+      cd python/storage && uv pip install . --no-cache && cd ../..
+
+      cd python/sklearnserver && uv sync --active --no-cache && cd ../..
+      cd python/sklearnserver && uv pip install . --no-cache && cd ../..
+
+      cd python/xgbserver && uv sync --active --no-cache && cd ../..
+      cd python/xgbserver && uv pip install . --no-cache && cd ../..
+
+      cd python/lgbserver && uv sync --active --no-cache && cd ../..
+      cd python/lgbserver && uv pip install . --no-cache && cd ../..
+
+      cd python/predictiveserver && uv sync --active --no-cache && cd ../..
+      cd python/predictiveserver && uv pip install . --no-cache && cd ../..
+
+      # Promote installed packages from the virtual env into the final image.
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
+      cp -fr ./python_venv/lib/python3.11/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+
+      # Mirror the upstream runtime source-tree layout.
+      cp -fr python/kserve $CRAFT_PART_INSTALL/kserve
+      cp -fr python/storage $CRAFT_PART_INSTALL/storage
+      cp -fr python/sklearnserver $CRAFT_PART_INSTALL/sklearnserver
+      cp -fr python/xgbserver $CRAFT_PART_INSTALL/xgbserver
+      cp -fr python/lgbserver $CRAFT_PART_INSTALL/lgbserver
+      cp -fr python/predictiveserver $CRAFT_PART_INSTALL/predictiveserver
+
+      # Ensure modules are importable if uv leaves workspace dependencies as source links.
+      cp -fr python/kserve $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/storage $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/sklearnserver $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/xgbserver $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/lgbserver $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+      cp -fr python/predictiveserver $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
+
+      # Ensure `python` command exists in the primed image.
+      mkdir -p $CRAFT_PART_INSTALL/usr/bin/
+      ln -s /usr/bin/python3.11 $CRAFT_PART_INSTALL/usr/bin/python
+
+      # Generate third-party licenses.
+      cd python
+      cp third_party/pip-licenses.py pip-licenses.py
+      uv pip install --no-cache-dir tomli requests
+      mkdir -p third_party/library && python3 pip-licenses.py
+      mkdir -p ${CRAFT_PART_INSTALL}/third_party
+      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
