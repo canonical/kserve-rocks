@@ -1,11 +1,11 @@
-# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/huggingface_server.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/huggingface_server.Dockerfile
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
 # This rock uses a few atypical patterns to mirror the upstream Dockerfile layout.
 
 name: huggingfaceserver
 summary: Huggingface server for Kserve deployments
 description: "Kserve Huggingface server"
-version: "0.15.2"
+version: "0.17.0"
 license: Apache-2.0
 base: ubuntu@22.04
 run-user: _daemon_
@@ -24,13 +24,14 @@ services:
       HF_HOME: "/tmp/huggingface"
       SAFETENSORS_FAST_GPU: "1"
       HF_HUB_DISABLE_TELEMETRY: "1"
-      CUDA: "12.4"
-      CUDA_VERSION: "12.4.1"
+      CUDA: "12.9"
+      CUDA_VERSION: "12.9.1"
       NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
       PATH: "/usr/local/nvidia/bin:/usr/local/cuda/bin:$PATH"
+      PYTHONPATH: /huggingfaceserver
       # Include CUDA "compat" (ships libcuda.so.*) and common NVIDIA lib paths first.
-      LD_LIBRARY_PATH: "/usr/local/cuda-12.4/compat:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-12.4/lib:/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH"
+      LD_LIBRARY_PATH: "/usr/local/cuda-12.9/compat:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
       # vLLM looks here when NCCL is vendored via PyPI wheels.
       VLLM_NCCL_SO_PATH: "/usr/local/lib/python3.12/dist-packages/nvidia/nccl/lib/libnccl.so.2"
       VLLM_WORKER_MULTIPROC_METHOD: "spawn"
@@ -54,7 +55,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.15.2
+    source-tag: v0.17.0
     overlay-packages:
       # Runtime deps commonly required by CV/transformers stacks.
       - ffmpeg
@@ -73,12 +74,12 @@ parts:
       - ca-certificates
       - git
     build-environment:
-      - CUDA: "12.4"
-      - CUDA_VERSION: "12.4.1"
+      - CUDA: "12.9"
+      - CUDA_VERSION: "12.9.1"
       - WORKSPACE_DIR: "/kserve-workspace"
       - VENV_PATH: "prod_venv"
       - PYTHON_VERSION: "3.12"
-      - LD_LIBRARY_PATH: "/usr/local/cuda-12.4/lib:/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH"
+      - LD_LIBRARY_PATH: "/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
     override-build: |
 
       set -eux
@@ -89,19 +90,19 @@ parts:
       apt-get -yq update
 
       apt-get -yq install --no-install-recommends \
-        cuda-compat-12-4=550.54.15-1 \
-        cuda-cudart-12-4=12.4.127-1 \
-        cuda-toolkit-12-4-config-common=12.4.127-1 \
-        cuda-toolkit-12-config-common=12.4.127-1 \
-        cuda-toolkit-config-common=12.4.127-1
+        cuda-compat-12-9=TODO \
+        cuda-cudart-12-9=TODO \
+        cuda-toolkit-12-9-config-common=TODO \
+        cuda-toolkit-12-config-common=TODO \
+        cuda-toolkit-config-common=TODO
 
       # Promote CUDA tree into primed image.
       mkdir -p "$CRAFT_PART_INSTALL/usr/local"
-      cp -a /usr/local/cuda-12.4 "$CRAFT_PART_INSTALL/usr/local/"
+      cp -a /usr/local/cuda-12.9 "$CRAFT_PART_INSTALL/usr/local/"
 
       # Expose libcuda in a standard path for runtimes that don't mount the host lib.
       mkdir -p "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu"
-      ln -sf /usr/local/cuda-12.4/compat/libcuda.so.1 \
+      ln -sf /usr/local/cuda-12.9/compat/libcuda.so.1 \
         "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libcuda.so.1"
 
       # Copy dpkg/apt metadata to support later apt operations inside the final image.
@@ -146,8 +147,9 @@ parts:
 
       # Extra runtime deps not captured by the dummy file.
       pip install --no-cache-dir \
-        "vllm[runai,tensorizer,fastsafetensors]==0.8.5" \
-        "lmcache==0.2.1"
+        "vllm[runai,tensorizer,fastsafetensors]==0.15.1" \
+        "lmcache==0.3.9" \
+        "flashinfer-python==0.6.1"
 
       # Promote installed packages and shared data into the primed image.
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages
@@ -167,7 +169,7 @@ parts:
     after: [ python-and-cuda ]
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.15.2
+    source-tag: v0.17.0
     override-build: |
 
       set -eux
