@@ -54,5 +54,5 @@ This rock can be tested locally by building it from source and running it follow
 
     which should return an output similar to:
     ```log
-    {"model_name":"test_model","model_version":null,"id":"49a2d686-2b16-429e-b1af-da9c25ee1298","parameters":null,"outputs":[{"name":"output-0","shape":[2],"datatype":"FP32","parameters":null,"data":[1.0,1.0]}]}
+    {"model_name":"test_model","model_version":null,"id":"dc12cddd-b914-4b1f-a5fb-425e624a3f5b","parameters":null,"outputs":[{"name":"output-0","shape":[2,3],"datatype":"FP64","parameters":null,"data":[0.00028762259763255566,0.9763481320224064,0.023364245379961103,0.0005625431624697456,0.9988642605470336,0.0005731962904966214]}]}
     ```
