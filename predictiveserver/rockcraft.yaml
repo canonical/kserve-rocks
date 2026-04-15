@@ -1,4 +1,4 @@
-# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/predictive.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/predictiveserver.Dockerfile
 #
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
 # This rock is implemented with some atypical patterns due to the nature of the upstream
@@ -65,23 +65,8 @@ parts:
       export VIRTUAL_ENV=$PWD/python_venv
       export PATH="$VIRTUAL_ENV/bin:$PATH"
 
-      # Install packages in dependency order.
-      cd python/kserve && uv sync --active --no-cache && cd ../..
-      cd python/kserve && uv pip install . --no-cache && cd ../..
-
-      cd python/storage && uv sync --active --no-cache && cd ../..
-      cd python/storage && uv pip install . --no-cache && cd ../..
-
-      cd python/sklearnserver && uv sync --active --no-cache && cd ../..
-      cd python/sklearnserver && uv pip install . --no-cache && cd ../..
-
-      cd python/xgbserver && uv sync --active --no-cache && cd ../..
-      cd python/xgbserver && uv pip install . --no-cache && cd ../..
-
-      cd python/lgbserver && uv sync --active --no-cache && cd ../..
-      cd python/lgbserver && uv pip install . --no-cache && cd ../..
-
-      cd python/predictiveserver && uv sync --active --no-cache && cd ../..
+      # Match upstream behavior: install once from predictiveserver, which
+      # resolves and installs the required runtime dependencies.
       cd python/predictiveserver && uv pip install . --no-cache && cd ../..
 
       # Promote installed packages from the virtual env into the final image.

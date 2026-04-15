@@ -7,7 +7,7 @@
 
 ### Instructions
 
-From the [upstream usage examples](https://kserve.github.io/website/master/modelserving/v1beta1/sklearn/v2/#deploy-the-model-with-rest-endpoint-through-inferenceservice/), this rock can be tested locally using a sklearn model with predictiveserver:
+From the [upstream usage examples](https://kserve.github.io/website/latest/modelserving/v1beta1/sklearn/v2/), this rock can be tested locally using a sklearn model with predictiveserver:
 
 Launch the server with:
 ```bash
