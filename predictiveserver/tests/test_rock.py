@@ -1,4 +1,4 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 from pathlib import Path
@@ -47,7 +47,19 @@ def test_rock(rock_test_env):
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /xgbserver",
+            "ls -la /usr/local/lib/python3.11/dist-packages/predictiveserver",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            "ls -la /usr/local/lib/python3.11/dist-packages/sklearnserver",
         ],
         check=True,
     )
@@ -71,7 +83,7 @@ def test_rock(rock_test_env):
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /storage",
+            "ls -la /usr/local/lib/python3.11/dist-packages/lgbserver",
         ],
         check=True,
     )
@@ -95,7 +107,7 @@ def test_rock(rock_test_env):
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /kserve",
+            "ls -la /usr/local/lib/python3.11/dist-packages/kserve",
         ],
         check=True,
     )
@@ -107,7 +119,67 @@ def test_rock(rock_test_env):
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /usr/local/lib/python3.11/dist-packages/kserve",
+            "ls -la /predictiveserver",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            "ls -la /sklearnserver",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            "ls -la /xgbserver",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            "ls -la /lgbserver",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            "ls -la /storage",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            "ls -la /kserve",
         ],
         check=True,
     )
@@ -123,4 +195,3 @@ def test_rock(rock_test_env):
         ],
         check=True,
     )
-
