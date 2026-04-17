@@ -36,6 +36,42 @@ def test_rock():
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
+            "ls -la /artexplainer",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            "ls -la /usr/local/lib/python3.11/dist-packages/artexplainer",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            "ls -la /kserve",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
             "ls -la /usr/local/lib/python3.11/dist-packages/kserve",
         ],
         check=True,
