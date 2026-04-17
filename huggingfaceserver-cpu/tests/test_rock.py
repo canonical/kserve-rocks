@@ -21,7 +21,12 @@ def test_rock():
     paths = [
         "/usr/local/lib/python3.10/dist-packages/huggingfaceserver",
         "/usr/local/lib/python3.10/dist-packages/kserve",
+        "/usr/local/lib/python3.10/dist-packages/storage",
+        "/huggingfaceserver",
+        "/kserve",
+        "/storage",
         "/third_party",
+        "/third_party/library",
     ]
 
     for p in paths:

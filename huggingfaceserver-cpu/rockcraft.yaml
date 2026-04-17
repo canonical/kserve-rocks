@@ -1,10 +1,10 @@
-# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/huggingface_server_cpu.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/huggingface_server_cpu.Dockerfile
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
 
 name: huggingfaceserver-cpu
 summary: HuggingFace server for KServe deployments (CPU-only)
 description: "KServe HuggingFace server with PyTorch CPU + IPEX + vLLM (CPU)."
-version: "0.15.2"
+version: "0.17.0"
 license: Apache-2.0
 base: ubuntu@22.04
 platforms:
@@ -19,6 +19,7 @@ services:
     startup: enabled
     command: "python -m huggingfaceserver [ dummy-arguments ]"
     environment:
+      PYTHONPATH: /huggingfaceserver
       HF_HOME: "/tmp/huggingface"
       HF_HUB_DISABLE_TELEMETRY: "1"
       LD_PRELOAD: "/usr/lib/x86_64-linux-gnu/libtcmalloc.so.4:/usr/lib/x86_64-linux-gnu/libjemalloc.so.2"
@@ -38,89 +39,114 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.15.2
+    source-tag: v0.17.0
     build-packages:
       - build-essential
+      - curl
       - gcc-12
       - g++-12
       - git
       - libnuma-dev
       - pkg-config
+      - python3.10-dev
+      - python3.10-venv
+      - python3-pip
 
     overlay-packages:
       - python3.10
+      - python3.10-venv
+      - python3-pip
       - google-perftools
       - libjemalloc2
       - libnuma1
       - numactl
       - libgl1
       - libglib2.0-0
+      - curl
 
     override-build: |
-      # Match upstream: prefer GCC/G++ 12
+      set -eux
+
+      # Match upstream: prefer GCC/G++ 12.
       update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 10 --slave /usr/bin/g++ g++ /usr/bin/g++-12
+      ln -sf "$(which python3)" /usr/bin/python
 
-      python3 -m pip install --upgrade pip setuptools poetry==1.8.3
-      poetry config virtualenvs.create false
+      # Install uv if not already installed.
+      which uv > /dev/null || (curl -LsSf https://astral.sh/uv/install.sh | sh && ln -sf /root/.local/bin/uv /usr/local/bin/uv)
+      export PATH="/root/.local/bin:$PATH"
 
-      mkdir -p ./python_env_builddir
-      cp -rf "$CRAFT_PROJECT_DIR/dummy_pyproject.toml" ./python_env_builddir/pyproject.toml
+      # Activate virtual environment.
+      uv venv ./python_venv
+      export VIRTUAL_ENV=$PWD/python_venv
+      export PATH="$VIRTUAL_ENV/bin:$PATH"
 
-      TORCH_VERSION="2.6.0"
-      TORCHVISION_VERSION="0.21.0"
+      TORCH_VERSION="2.10.0"
       TORCH_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
-      IPEX_EXTRA_INDEX_URL="https://pytorch-extension.intel.com/release-whl/stable/cpu/us/"
+      VLLM_VERSION="0.15.1"
 
-      pushd python_env_builddir
-        # Ensure path deps resolve to the checked-out repo paths
-        # dummy pyproject uses: ../python/kserve and ../python/huggingfaceserver
-        # Add PyTorch CPU index and pin torch family
-        poetry source add --priority=supplemental pytorch-cpu "${TORCH_EXTRA_INDEX_URL}"
-        poetry add --source pytorch-cpu \
-          "torch~=${TORCH_VERSION}" \
-          "torchaudio~=${TORCH_VERSION}" \
-          "torchvision~=${TORCHVISION_VERSION}"
+      # Install kserve using uv.
+      cd python/kserve && uv sync --active --no-cache && uv cache clean && cd ../..
 
-        poetry lock
-        poetry install --no-interaction --no-root
-      popd
+      # Install storage using uv.
+      cd python/storage && uv sync --active --no-cache && uv cache clean && cd ../..
+      cd python/storage && uv pip install . --no-cache && uv cache clean && cd ../..
 
-      # Intel Extension for PyTorch + OpenMP from extra indexes
-      python3 -m pip install --no-cache-dir \
-        --extra-index-url "${TORCH_EXTRA_INDEX_URL}" \
-        --extra-index-url "${IPEX_EXTRA_INDEX_URL}" \
-        "intel_extension_for_pytorch~=${TORCH_VERSION}" \
-        intel-openmp
+      # Install huggingfaceserver using uv with Torch from CPU index.
+      cd python/huggingfaceserver && \
+        uv pip install --no-cache-dir --index-url "${TORCH_EXTRA_INDEX_URL}" \
+          torch=="${TORCH_VERSION}" \
+          torchvision \
+          torchaudio && \
+        uv sync --active --no-cache && \
+        uv cache clean && \
+        cd ../..
 
-      # vLLM (CPU) build
-      VLLM_VERSION="0.8.5"
+      # Build and install vLLM (CPU).
       export VLLM_CPU_DISABLE_AVX512="true"
       export VLLM_CPU_AVX512BF16="1"
       export VLLM_TARGET_DEVICE="cpu"
 
       git clone --single-branch --branch "v${VLLM_VERSION}" https://github.com/vllm-project/vllm.git
-      pushd vllm
-        python3 -m pip install --no-cache-dir -r requirements/build.txt
-        python3 -m pip install --no-cache-dir -r requirements/cpu.txt
-        python3 setup.py bdist_wheel
-        python3 -m pip install --no-cache-dir dist/vllm-${VLLM_VERSION}*.whl
-      popd
 
-      # Third-party licenses (mirror upstream)
+      # Install vLLM CPU build/runtime requirements, then build wheel.
+      (cd vllm && \
+        uv pip install --no-cache -v --index-strategy unsafe-best-match --extra-index-url "${TORCH_EXTRA_INDEX_URL}" -r requirements/cpu-build.txt)
+      uv cache clean
+      (cd vllm && \
+        uv pip install --no-cache -v --index-strategy unsafe-best-match --extra-index-url "${TORCH_EXTRA_INDEX_URL}" -r requirements/cpu.txt)
+      uv cache clean
+      (cd vllm && python setup.py bdist_wheel)
+
+      # Install the built wheel.
+      uv pip install --no-cache vllm/dist/vllm-${VLLM_VERSION}*.whl
+      uv cache clean
+
+      # Third-party licenses (mirror upstream).
       cd python
       cp -f third_party/pip-licenses.py ./pip-licenses.py
-      python3 -m pip install --no-cache-dir tomli
+      uv pip install --no-cache tomli
       mkdir -p third_party/library
       python3 pip-licenses.py
+      cd ..
 
-      # Promote installed packages into the primed image
+      # Promote installed packages into the primed image.
       mkdir -p ${CRAFT_PART_INSTALL}/usr/local/lib/python3.10/dist-packages
-      cp -fr /usr/local/lib/python3.10/dist-packages/* ${CRAFT_PART_INSTALL}/usr/local/lib/python3.10/dist-packages/ || true
+      cp -fr "$VIRTUAL_ENV/lib/python3.10/site-packages/." ${CRAFT_PART_INSTALL}/usr/local/lib/python3.10/dist-packages/
 
-      # Ensure `python` exists in the primed image
+      # Mirror upstream runtime source-tree layout.
+      cp -fr python/huggingfaceserver ${CRAFT_PART_INSTALL}/huggingfaceserver
+      cp -fr python/kserve ${CRAFT_PART_INSTALL}/kserve
+      cp -fr python/storage ${CRAFT_PART_INSTALL}/storage
+
+      # Ensure modules are importable if uv keeps workspace source deps.
+      cp -fr python/huggingfaceserver ${CRAFT_PART_INSTALL}/usr/local/lib/python3.10/dist-packages/
+      cp -fr python/kserve ${CRAFT_PART_INSTALL}/usr/local/lib/python3.10/dist-packages/
+      cp -fr python/storage ${CRAFT_PART_INSTALL}/usr/local/lib/python3.10/dist-packages/
+
+      # Ensure `python` exists in the primed image.
       mkdir -p ${CRAFT_PART_INSTALL}/usr/bin
       ln -sf /usr/bin/python3.10 ${CRAFT_PART_INSTALL}/usr/bin/python
 
-      # Third-party licenses payload
+      # Third-party licenses payload.
       mkdir -p ${CRAFT_PART_INSTALL}/third_party
-      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
+      cp -fr python/third_party/. ${CRAFT_PART_INSTALL}/third_party/
