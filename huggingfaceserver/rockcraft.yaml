@@ -145,11 +145,17 @@ parts:
       cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
       (cd python_env_builddir && poetry install --no-interaction --no-root)
 
+      # Use Bash with `-o pipefail` so we can leverage Bash-specific features (like `[[ … ]]` for glob tests)
+      # and ensure that failures in any part of a piped command cause the build to fail immediately.
+      /bin/bash -o pipefail -c
+
       # Extra runtime deps not captured by the dummy file.
       pip install --no-cache-dir \
+        --extra-index-url https://flashinfer.ai/whl/cu$(echo "12.9.1" | cut -d. -f1,2 | tr -d '.') \
         "vllm[runai,tensorizer,fastsafetensors]==0.15.1" \
         "lmcache==0.3.9" \
-        "flashinfer-python==0.6.1"
+        "flashinfer-cubin==0.6.1" \
+        "flashinfer-jit-cache==0.6.1"
 
       # Promote installed packages and shared data into the primed image.
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages
