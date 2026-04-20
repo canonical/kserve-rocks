@@ -159,7 +159,17 @@ parts:
 
       # Promote installed packages and shared data into the primed image.
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages
-      cp -fr /usr/local/lib/python3.12/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages/
+      cp -fr "$VIRTUAL_ENV/lib/python3.12/dist-packages/." ${CRAFT_PART_INSTALL}/usr/local/lib/python3.12/dist-packages/
+
+      # Mirror upstream runtime source-tree layout.
+      cp -fr python/storage ${CRAFT_PART_INSTALL}/storage
+      cp -fr python/kserve ${CRAFT_PART_INSTALL}/kserve
+      cp -fr python/huggingfaceserver ${CRAFT_PART_INSTALL}/huggingfaceserver
+
+      # Ensure modules are importable if uv keeps workspace source deps.
+      cp -fr python/kserve ${CRAFT_PART_INSTALL}/usr/local/lib/python3.12/dist-packages/
+      cp -fr python/storage ${CRAFT_PART_INSTALL}/usr/local/lib/python3.12/dist-packages/
+      cp -fr python/huggingfaceserver ${CRAFT_PART_INSTALL}/usr/local/lib/python3.12/dist-packages/
 
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
       cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
