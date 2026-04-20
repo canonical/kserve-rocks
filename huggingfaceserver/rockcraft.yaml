@@ -20,7 +20,6 @@ services:
     startup: enabled
     command: "python -m huggingfaceserver [ dummy-arguments ]"
     environment:
-      PYTHONPATH: "/usr/local/lib/python3.12/dist-packages"
       HF_HOME: "/tmp/huggingface"
       SAFETENSORS_FAST_GPU: "1"
       HF_HUB_DISABLE_TELEMETRY: "1"
@@ -90,11 +89,11 @@ parts:
       apt-get -yq update
 
       apt-get -yq install --no-install-recommends \
-        cuda-compat-12-9=TODO \
-        cuda-cudart-12-9=TODO \
-        cuda-toolkit-12-9-config-common=TODO \
-        cuda-toolkit-12-config-common=TODO \
-        cuda-toolkit-config-common=TODO
+        cuda-compat-12-9 \
+        cuda-cudart-12-9 \
+        cuda-toolkit-12-9-config-common \
+        cuda-toolkit-12-config-common \
+        cuda-toolkit-config-common
 
       # Promote CUDA tree into primed image.
       mkdir -p "$CRAFT_PART_INSTALL/usr/local"
