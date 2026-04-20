@@ -210,7 +210,7 @@ parts:
       # Generate third-party license bundle.
       cd python
       cp third_party/pip-licenses.py pip-licenses.py
-      pip install --no-cache tomli
+      pip install --no-cache-dir tomli
       mkdir -p third_party/library && python3.12 pip-licenses.py
 
       # Stage third_party outputs into the final image.
