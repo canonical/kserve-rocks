@@ -150,7 +150,7 @@ parts:
       cd python/huggingfaceserver && uv sync --active --no-cache && uv cache clean && cd ../..
 
       # Install vllm, lmcache and flashinfer via pip
-      pip install --no-cache-dir \
+      uv pip install --no-cache \
         --extra-index-url https://flashinfer.ai/whl/cu$(echo "12.9.1" | cut -d. -f1,2 | tr -d '.') \
         "vllm[runai,tensorizer,fastsafetensors]==0.15.1" \
         "lmcache==0.3.9" \
@@ -200,7 +200,7 @@ parts:
       # Generate third-party license bundle.
       cd python
       cp third_party/pip-licenses.py pip-licenses.py
-      pip install --no-cache-dir tomli
+      uv pip install --no-cache tomli
       mkdir -p third_party/library && python3.12 pip-licenses.py
 
       # Stage third_party outputs into the final image.
