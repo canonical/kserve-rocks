@@ -135,21 +135,26 @@ parts:
       update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 50
       update-alternatives --set python3 /usr/bin/python3.12
 
-      # Bootstrap pip and Poetry (no venv: we copy site-packages into the primed image).
-      curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
-      pip install --no-cache-dir poetry==1.8.3
-      poetry config virtualenvs.create false 
+      # Install uv if not already installed.
+      which uv > /dev/null || (curl -LsSf https://astral.sh/uv/install.sh | sh && ln -sf /root/.local/bin/uv /usr/local/bin/uv)
+      export PATH="/root/.local/bin:$PATH"
 
-      # Resolve Python deps via Poetry with a dummy pyproject matching the server needs.
-      mkdir -p ./python_env_builddir
-      cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
-      (cd python_env_builddir && poetry install --no-interaction --no-root)
+      # Activate virtual environment.
+      uv venv ./python_venv
+      export VIRTUAL_ENV=$PWD/python_venv
+      export PATH="$VIRTUAL_ENV/bin:$PATH"
+
+      # Install kserve, storage and huggingfaceserver via uv
+      cd python/kserve && uv sync --active --no-cache && uv cache clean && cd ../..
+      cd python/storage && uv sync --active --no-cache && uv cache clean && cd ../..
+      cd python/storage && uv pip install . --no-cache && uv cache clean && cd ../..
+      cd python/huggingfaceserver && uv sync --active --no-cache && uv cache clean && cd ../..
 
       # Use Bash with `-o pipefail` so we can leverage Bash-specific features (like `[[ … ]]` for glob tests)
       # and ensure that failures in any part of a piped command cause the build to fail immediately.
       /bin/bash -o pipefail -c
 
-      # Extra runtime deps not captured by the dummy file.
+      # Install vllm, lmcache and flashinfer via pip
       pip install --no-cache-dir \
         --extra-index-url https://flashinfer.ai/whl/cu$(echo "12.9.1" | cut -d. -f1,2 | tr -d '.') \
         "vllm[runai,tensorizer,fastsafetensors]==0.15.1" \
