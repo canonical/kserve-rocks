@@ -81,7 +81,7 @@ parts:
       - LD_LIBRARY_PATH: "/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
     override-build: |
 
-      set -eux
+      set -eux -o -o pipefail
 
       # --- CUDA repo & minimal runtime (mirrors upstream base/devel images) ---
       wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
@@ -148,10 +148,6 @@ parts:
       cd python/storage && uv sync --active --no-cache && uv cache clean && cd ../..
       cd python/storage && uv pip install . --no-cache && uv cache clean && cd ../..
       cd python/huggingfaceserver && uv sync --active --no-cache && uv cache clean && cd ../..
-
-      # Use Bash with `-o pipefail` so we can leverage Bash-specific features (like `[[ … ]]` for glob tests)
-      # and ensure that failures in any part of a piped command cause the build to fail immediately.
-      /bin/bash -o pipefail -c
 
       # Install vllm, lmcache and flashinfer via pip
       pip install --no-cache-dir \
