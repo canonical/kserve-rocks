@@ -99,31 +99,30 @@ This rock can be tested locally by building it from source (on CPU) and running 
     juju wait-for application --query='status=="active"' kserve-controller
     ```
 
-1. Test a corresponding serving runtime is successfully initialized ([example](https://github.com/canonical/kserve-rocks/pull/206)):
+1. Test a corresponding serving runtime is successfully initialized ([example](https://kserve.github.io/website/docs/model-serving/predictive-inference/frameworks/huggingface/fill-mask)):
     ```bash
     kubectl apply -f - <<EOF
     apiVersion: serving.kserve.io/v1beta1
     kind: InferenceService
     metadata:
-      name: huggingface-tiny-sentiment
+      name: huggingface-bert
     spec:
       predictor:
         model:
           modelFormat:
             name: huggingface
           args:
-            - --backend=huggingface
-            - --model_id=sshleifer/tiny-distilroberta-base
-            - --task=fill_mask
+            - --model_name=bert
+          storageUri: "hf://google-bert/bert-base-uncased"
           resources:
-            requests:
-              cpu: 100m
-              memory: 600Mi
-              nvidia.com/gpu: 1
             limits:
               cpu: "1"
-              memory: 1Gi
-              nvidia.com/gpu: 1
+              memory: 2Gi
+              nvidia.com/gpu: "1"
+            requests:
+              cpu: "1"
+              memory: 2Gi
+              nvidia.com/gpu: "1"
     EOF
 
     kubectl describe inferenceservices/huggingface-tiny-sentiment
