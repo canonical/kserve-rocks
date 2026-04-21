@@ -50,6 +50,30 @@ def test_rock():
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
+            "ls -la /usr/local/lib/python3.12/dist-packages/storage",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
+            "ls -la /storage",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--entrypoint",
+            "/bin/bash",
+            LOCAL_ROCK_IMAGE,
+            "-c",
             "ls -la /usr/local/lib/python3.12/dist-packages/kserve",
         ],
         check=True,
