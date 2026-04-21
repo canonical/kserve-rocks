@@ -6,7 +6,7 @@
 
 ### Instructions
 
-This rock can be tested locally by building it from source (on CPU) and running it as a serving runtime in the KServe charm (on GPU) following [the upstream usage example](https://kserve.github.io/website/docs/model-serving/predictive-inference/frameworks/huggingface/overview). In particular:
+This rock can be tested locally by building it from source (on CPU) and running it as a serving runtime in the KServe charm (on GPU) following [the upstream usage example](https://kserve.github.io/website/docs/model-serving/predictive-inference/frameworks/huggingface/fill-mask). In particular:
 
 1. Set up Rockcraft:
     ```bash
@@ -99,31 +99,57 @@ This rock can be tested locally by building it from source (on CPU) and running 
     juju wait-for application --query='status=="active"' kserve-controller
     ```
 
-1. Test a corresponding serving runtime is successfully initialized ([example](https://kserve.github.io/website/docs/model-serving/predictive-inference/frameworks/huggingface/fill-mask)):
+1. Test a corresponding serving runtime is successfully initialized ([simplified example](https://github.com/canonical/kserve-rocks/pull/206)):
     ```bash
     kubectl apply -f - <<EOF
     apiVersion: serving.kserve.io/v1beta1
     kind: InferenceService
     metadata:
-      name: huggingface-bert
+      name: hf-tiny-sentiment
     spec:
       predictor:
         model:
           modelFormat:
             name: huggingface
           args:
-            - --model_name=bert
-          storageUri: "hf://google-bert/bert-base-uncased"
+            - --backend=huggingface
+            - --model_id=sshleifer/tiny-distilroberta-base
+            - --task=fill_mask
           resources:
+            requests:
+              cpu: 100m
+              memory: 600Mi
+              nvidia.com/gpu: 1
             limits:
               cpu: "1"
-              memory: 2Gi
-              nvidia.com/gpu: "1"
-            requests:
-              cpu: "1"
-              memory: 2Gi
-              nvidia.com/gpu: "1"
+              memory: 1Gi
+              nvidia.com/gpu: 1
     EOF
 
-    kubectl describe inferenceservices/huggingface-tiny-sentiment
+    kubectl logs deployment/hf-tiny-sentiment-predictor-00001-deployment | head -n 21
+    ```
+    Assert the output is similar to:
+    ```log
+    Defaulted container "kserve-container" out of: kserve-container, queue-proxy
+    INFO 04-21 16:26:54 [importing.py:44] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
+    INFO 04-21 16:26:54 [importing.py:68] Triton not installed or not compatible; certain GPU-related functions will not be available.
+    W0421 16:26:54.899000 1 prod_venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py:117] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+    `torch_dtype` is deprecated! Use `dtype` instead!
+    [2026-04-21 16:26:56] INFO __main__.py:299: Loading encoder model for task 'fill_mask' in torch.float32
+    [2026-04-21 16:26:59] INFO encoder_model.py:184: Successfully loaded tokenizer
+    Some weights of the model checkpoint at sshleifer/tiny-distilroberta-base were not used when initializing RobertaForMaskedLM: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+    - This IS expected if you are initializing RobertaForMaskedLM from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+    - This IS NOT expected if you are initializing RobertaForMaskedLM from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+    [2026-04-21 16:27:03] INFO encoder_model.py:207: Successfully loaded huggingface model from path sshleifer/tiny-distilroberta-base
+    [2026-04-21 16:27:03] INFO model_server.py:423: Registering model: hf-tiny-sentiment
+    [2026-04-21 16:27:03] INFO model_server.py:301: Setting max asyncio worker threads as 32
+    [2026-04-21 16:27:03] INFO server.py:120: OpenAI endpoints registered
+    [2026-04-21 16:27:03] INFO server.py:130: Time series endpoints not registered
+    [2026-04-21 16:27:03] INFO server.py:181: Starting uvicorn with 1 workers
+    [2026-04-21 16:27:03] INFO server.py:83: Started server process [1]
+    [2026-04-21 16:27:03] INFO on.py:48: Waiting for application startup.
+    [2026-04-21 16:27:03] INFO server.py:70: Starting gRPC server with 4 workers
+    [2026-04-21 16:27:03] INFO server.py:71: Starting gRPC server on [::]:8081
+    [2026-04-21 16:27:03] INFO on.py:62: Application startup complete.
+    [2026-04-21 16:27:03] INFO server.py:215: Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
     ```
