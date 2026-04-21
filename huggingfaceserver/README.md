@@ -88,7 +88,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
     juju deploy --trust --channel latest/edge knative-operator
     juju wait-for application --query='status=="active"' knative-operator
 
-    juju deploy --trust --channel latest/edge knative-serving --config istio.gateway.namespace=kubeflow --config istio.gateway.name=test-gateway --config custom_images="{\"serving_runtimes__huggingfaceserver\": \"${your_image_registry_name}/huggingfaceserver:local\"}"
+    juju deploy --trust --channel latest/edge knative-serving --config istio.gateway.namespace=kubeflow --config istio.gateway.name=test-gateway --config custom_images="{\"serving_runtimes__huggingfaceserver__multinode\": \"${your_image_registry_name}/huggingfaceserver:local\"}"
     juju wait-for application --query='status=="active"' knative-serving
 
     juju deploy --trust --channel latest/edge kserve-controller --config deployment-mode=knative
