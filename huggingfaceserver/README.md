@@ -61,8 +61,8 @@ This rock can be tested locally by building it from source (on CPU) and running 
     ```bash
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 \
         && chmod 700 get_helm.sh \
-        && ./get_helm.sh
-        $$ rm ./get_helm.sh
+        && ./get_helm.sh \
+        && rm ./get_helm.sh
     helm repo add nvidia https://helm.ngc.nvidia.com/nvidia \
         && helm repo update
     helm install --wait --generate-name \
