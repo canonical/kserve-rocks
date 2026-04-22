@@ -81,7 +81,7 @@ parts:
       - LD_LIBRARY_PATH: "/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
     override-build: |
 
-      set -eux -o -o pipefail
+      set -eux -o pipefail
 
       # --- CUDA repo & minimal runtime (mirrors upstream base/devel images) ---
       wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
