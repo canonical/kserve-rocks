@@ -20,6 +20,7 @@ services:
     startup: enabled
     command: "python -m huggingfaceserver [ dummy-arguments ]"
     environment:
+      PYTHONPATH: /usr/local/lib/python3.12/dist-packages:/huggingfaceserver
       HF_HOME: "/tmp/huggingface"
       SAFETENSORS_FAST_GPU: "1"
       HF_HUB_DISABLE_TELEMETRY: "1"
@@ -28,7 +29,6 @@ services:
       NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
       PATH: "/usr/local/nvidia/bin:/usr/local/cuda/bin:$PATH"
-      PYTHONPATH: /huggingfaceserver
       # Include CUDA "compat" (ships libcuda.so.*) and common NVIDIA lib paths first.
       LD_LIBRARY_PATH: "/usr/local/cuda-12.9/compat:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
       # vLLM looks here when NCCL is vendored via PyPI wheels.
