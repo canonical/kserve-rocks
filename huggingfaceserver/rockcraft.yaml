@@ -1,11 +1,11 @@
-# Based on https://github.com/kserve/kserve/blob/v0.15.2/python/huggingface_server.Dockerfile
+# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/huggingface_server.Dockerfile
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
 # This rock uses a few atypical patterns to mirror the upstream Dockerfile layout.
 
 name: huggingfaceserver
 summary: Huggingface server for Kserve deployments
 description: "Kserve Huggingface server"
-version: "0.15.2"
+version: "0.17.0"
 license: Apache-2.0
 base: ubuntu@22.04
 run-user: _daemon_
@@ -20,17 +20,17 @@ services:
     startup: enabled
     command: "python -m huggingfaceserver [ dummy-arguments ]"
     environment:
-      PYTHONPATH: "/usr/local/lib/python3.12/dist-packages"
+      PYTHONPATH: /usr/local/lib/python3.12/dist-packages:/huggingfaceserver
       HF_HOME: "/tmp/huggingface"
       SAFETENSORS_FAST_GPU: "1"
       HF_HUB_DISABLE_TELEMETRY: "1"
-      CUDA: "12.4"
-      CUDA_VERSION: "12.4.1"
+      CUDA: "12.9"
+      CUDA_VERSION: "12.9.1"
       NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
       PATH: "/usr/local/nvidia/bin:/usr/local/cuda/bin:$PATH"
       # Include CUDA "compat" (ships libcuda.so.*) and common NVIDIA lib paths first.
-      LD_LIBRARY_PATH: "/usr/local/cuda-12.4/compat:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-12.4/lib:/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH"
+      LD_LIBRARY_PATH: "/usr/local/cuda-12.9/compat:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
       # vLLM looks here when NCCL is vendored via PyPI wheels.
       VLLM_NCCL_SO_PATH: "/usr/local/lib/python3.12/dist-packages/nvidia/nccl/lib/libnccl.so.2"
       VLLM_WORKER_MULTIPROC_METHOD: "spawn"
@@ -54,7 +54,7 @@ parts:
     plugin: nil
     source: https://github.com/kserve/kserve.git
     source-subdir: python
-    source-tag: v0.15.2
+    source-tag: v0.17.0
     overlay-packages:
       # Runtime deps commonly required by CV/transformers stacks.
       - ffmpeg
@@ -73,15 +73,15 @@ parts:
       - ca-certificates
       - git
     build-environment:
-      - CUDA: "12.4"
-      - CUDA_VERSION: "12.4.1"
+      - CUDA: "12.9"
+      - CUDA_VERSION: "12.9.1"
       - WORKSPACE_DIR: "/kserve-workspace"
       - VENV_PATH: "prod_venv"
       - PYTHON_VERSION: "3.12"
-      - LD_LIBRARY_PATH: "/usr/local/cuda-12.4/lib:/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH"
+      - LD_LIBRARY_PATH: "/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
     override-build: |
 
-      set -eux
+      set -eux -o pipefail
 
       # --- CUDA repo & minimal runtime (mirrors upstream base/devel images) ---
       wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
@@ -89,19 +89,19 @@ parts:
       apt-get -yq update
 
       apt-get -yq install --no-install-recommends \
-        cuda-compat-12-4=550.54.15-1 \
-        cuda-cudart-12-4=12.4.127-1 \
-        cuda-toolkit-12-4-config-common=12.4.127-1 \
-        cuda-toolkit-12-config-common=12.4.127-1 \
-        cuda-toolkit-config-common=12.4.127-1
+        cuda-compat-12-9=575.57.08-0ubuntu1 \
+        cuda-cudart-12-9=12.9.79-1 \
+        cuda-toolkit-12-9-config-common=12.9.79-1 \
+        cuda-toolkit-12-config-common=12.9.79-1 \
+        cuda-toolkit-config-common=12.9.79-1
 
       # Promote CUDA tree into primed image.
       mkdir -p "$CRAFT_PART_INSTALL/usr/local"
-      cp -a /usr/local/cuda-12.4 "$CRAFT_PART_INSTALL/usr/local/"
+      cp -a /usr/local/cuda-12.9 "$CRAFT_PART_INSTALL/usr/local/"
 
       # Expose libcuda in a standard path for runtimes that don't mount the host lib.
       mkdir -p "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu"
-      ln -sf /usr/local/cuda-12.4/compat/libcuda.so.1 \
+      ln -sf /usr/local/cuda-12.9/compat/libcuda.so.1 \
         "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libcuda.so.1"
 
       # Copy dpkg/apt metadata to support later apt operations inside the final image.
@@ -134,24 +134,52 @@ parts:
       update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 50
       update-alternatives --set python3 /usr/bin/python3.12
 
-      # Bootstrap pip and Poetry (no venv: we copy site-packages into the primed image).
-      curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
-      pip install --no-cache-dir poetry==1.8.3
-      poetry config virtualenvs.create false 
+      # Install uv if not already installed.
+      which uv > /dev/null || (curl -LsSf https://astral.sh/uv/install.sh | sh && ln -sf /root/.local/bin/uv /usr/local/bin/uv)
+      export PATH="/root/.local/bin:$PATH"
 
-      # Resolve Python deps via Poetry with a dummy pyproject matching the server needs.
-      mkdir -p ./python_env_builddir
-      cp -rf $CRAFT_PROJECT_DIR/dummy_pyproject.toml ./python_env_builddir/pyproject.toml
-      (cd python_env_builddir && poetry install --no-interaction --no-root)
+      # Activate virtual environment.
+      uv venv ./python_venv
+      export VIRTUAL_ENV=$PWD/python_venv
+      export PATH="$VIRTUAL_ENV/bin:$PATH"
 
-      # Extra runtime deps not captured by the dummy file.
-      pip install --no-cache-dir \
-        "vllm[runai,tensorizer,fastsafetensors]==0.8.5" \
-        "lmcache==0.2.1"
+      # Install kserve, storage and huggingfaceserver via uv
+      cd python/kserve && uv sync --active --no-cache && uv cache clean && cd ../..
+      cd python/storage && uv sync --active --no-cache && uv cache clean && cd ../..
+      cd python/storage && uv pip install . --no-cache && uv cache clean && cd ../..
+      cd python/huggingfaceserver && uv sync --active --no-cache && uv cache clean && cd ../..
+
+      # Install vllm, lmcache and flashinfer via pip
+      uv pip install --no-cache \
+        --extra-index-url https://flashinfer.ai/whl/cu$(echo "12.9.1" | cut -d. -f1,2 | tr -d '.') \
+        "vllm[runai,tensorizer,fastsafetensors]==0.15.1" \
+        "lmcache==0.3.9" \
+        "flashinfer-cubin==0.6.1" \
+        "flashinfer-jit-cache==0.6.1"
+
+      # Generate third-party license bundle.
+      cd python
+      cp third_party/pip-licenses.py pip-licenses.py
+      uv pip install --no-cache tomli
+      mkdir -p third_party/library
+      python3.12 pip-licenses.py
+      cd ..
 
       # Promote installed packages and shared data into the primed image.
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages
-      cp -fr /usr/local/lib/python3.12/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.12/dist-packages/
+      cp -fr "$VIRTUAL_ENV/lib/python3.12/site-packages/." ${CRAFT_PART_INSTALL}/usr/local/lib/python3.12/dist-packages/
+      mkdir -p ${CRAFT_PART_INSTALL}/third_party
+
+      # Mirror upstream runtime source-tree layout.
+      cp -fr python/storage ${CRAFT_PART_INSTALL}/storage
+      cp -fr python/kserve ${CRAFT_PART_INSTALL}/kserve
+      cp -fr python/huggingfaceserver ${CRAFT_PART_INSTALL}/huggingfaceserver
+      cp -fr python/third_party/* ${CRAFT_PART_INSTALL}/third_party
+
+      # Ensure modules are importable if uv keeps workspace source deps.
+      cp -fr python/kserve ${CRAFT_PART_INSTALL}/usr/local/lib/python3.12/dist-packages/
+      cp -fr python/storage ${CRAFT_PART_INSTALL}/usr/local/lib/python3.12/dist-packages/
+      cp -fr python/huggingfaceserver ${CRAFT_PART_INSTALL}/usr/local/lib/python3.12/dist-packages/
 
       mkdir -p $CRAFT_PART_INSTALL/usr/local/share
       cp -fr /usr/local/share/* $CRAFT_PART_INSTALL/usr/local/share/
@@ -161,40 +189,3 @@ parts:
       ln -s /usr/bin/python3.12 $CRAFT_PART_INSTALL/usr/bin/python
 
       rm -rf /root/.cache
-  
-  third-party-licenses:
-    plugin: nil
-    after: [ python-and-cuda ]
-    source: https://github.com/kserve/kserve.git
-    source-subdir: python
-    source-tag: v0.15.2
-    override-build: |
-
-      set -eux
-
-      # NOTE:
-      # - This step is split into its own part so license harvesting failures (e.g. packages
-      #   without pip-style license files) do not fail the CUDA/Python build above.
-      # - It mirrors the upstream Dockerfile’s “third_party” step and keeps the main part lean.
-      # - Re-establishing Python 3.12 here avoids any accidental interpreter/version drift.
-
-      # Ensure Python 3.12 tooling is available in this part as well.
-      add-apt-repository -y ppa:deadsnakes/ppa || true
-      apt-get -yq update
-      apt-get -yq install --no-install-recommends \
-        python3.12 python3.12-venv python3.12-dev python-is-python3
-      
-      update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 50
-      update-alternatives --set python3 /usr/bin/python3.12
-
-      curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
-
-      # Generate third-party license bundle.
-      cd python
-      cp third_party/pip-licenses.py pip-licenses.py
-      pip install --no-cache-dir tomli
-      mkdir -p third_party/library && python3.12 pip-licenses.py
-
-      # Stage third_party outputs into the final image.
-      mkdir -p ${CRAFT_PART_INSTALL}/third_party
-      cp -fr third_party/* ${CRAFT_PART_INSTALL}/third_party
