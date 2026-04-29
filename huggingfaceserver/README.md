@@ -49,6 +49,16 @@ This rock can be tested locally by building it from source (on CPU) and running 
     sudo rm -rf /run/containerd
     ```
 
+1. Install NVIDIA-GPU drivers and utilities:
+
+    Follow the section of [this guide](https://ubuntu.com/server/docs/how-to/graphics/install-nvidia-drivers/#the-recommended-way-ubuntu-drivers-tool) for server drivers - namely by:
+    1. running `sudo apt update && sudo apt upgrade`
+    1. running `sudo ubuntu-drivers install --gpgpu`
+    1. rebooting
+    1. checking that `cat /proc/driver/nvidia/version` returns the installed driver version
+    1. installing extra utilities matching the returned driver version with `apt install nvidia-utils-${driver_version}-server`
+    1. checking that `nvidia-smi` returns the expected driver setup
+
 1. Set up Canonical K8s:
     ```bash
     cd ../..
