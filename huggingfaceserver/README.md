@@ -52,11 +52,12 @@ This rock can be tested locally by building it from source (on CPU) and running 
 1. Install NVIDIA-GPU drivers and utilities:
 
     Follow the section of [this guide](https://ubuntu.com/server/docs/how-to/graphics/install-nvidia-drivers/#the-recommended-way-ubuntu-drivers-tool) for server drivers - namely by:
-    1. running `sudo apt update && sudo apt upgrade`
+    1. running `sudo apt update && sudo apt upgrade -y`
+    1. running `sudo apt install -y ubuntu-drivers-common`
     1. running `sudo ubuntu-drivers install --gpgpu`
-    1. rebooting
+    1. rebooting (e.g., `sudo reboot`)
     1. checking that `cat /proc/driver/nvidia/version` returns the installed driver version
-    1. installing extra utilities matching the returned driver version with `apt install nvidia-utils-${driver_version}-server`
+    1. installing extra utilities matching the returned driver version with `sudo apt install nvidia-utils-${driver_version}-server nvidia-fabricmanager-${driver_version} libnvidia-nscq-${driver_version}`
     1. checking that `nvidia-smi` returns the expected driver setup
 
 1. Set up Canonical K8s:
@@ -69,7 +70,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
     cd ..
     ```
 
-1. Set up [the NVIDIA GPU operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html):
+1. Set up [the NVIDIA GPU operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html) but [without delegating driver management to it](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#pre-installed-nvidia-gpu-drivers):
     ```bash
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 \
         && chmod 700 get_helm.sh \
@@ -80,7 +81,8 @@ This rock can be tested locally by building it from source (on CPU) and running 
     helm install --wait --generate-name \
         -n gpu-operator --create-namespace \
         nvidia/gpu-operator \
-        --version=v26.3.1
+        --version=v26.3.1 \
+        --set driver.enabled=false
     ```
 
 1. Deploy KServe with the locally built rock:
