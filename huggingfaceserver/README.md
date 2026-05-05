@@ -49,7 +49,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
     sudo rm -rf /run/containerd
     ```
 
-1. Install NVIDIA-GPU drivers and utilities:
+1. Install NVIDIA GPU drivers and utilities:
 
     Follow the section of [this guide](https://ubuntu.com/server/docs/how-to/graphics/install-nvidia-drivers/#the-recommended-way-ubuntu-drivers-tool) for server drivers - namely by:
     1. running `sudo apt update && sudo apt upgrade -y`
@@ -59,6 +59,10 @@ This rock can be tested locally by building it from source (on CPU) and running 
     1. checking that `cat /proc/driver/nvidia/version` returns the installed driver version
     1. installing extra utilities matching the returned driver version with `sudo apt install nvidia-utils-${driver_version}-server nvidia-fabricmanager-${driver_version} libnvidia-nscq-${driver_version}`
     1. checking that `nvidia-smi` returns the expected driver setup
+
+1. Install the NVIDIA Container Toolkit:
+
+    Follow [this guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#with-apt-ubuntu-debian).
 
 1. Set up Canonical K8s:
     ```bash
@@ -70,7 +74,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
     cd ..
     ```
 
-1. Set up [the NVIDIA GPU operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html) but [without delegating driver management to it](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#pre-installed-nvidia-gpu-drivers):
+1. Set up [the NVIDIA GPU operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html) but [delegating neither NVIDIA GPU driver management nor NVIDIA Container Toolkit management to it](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#pre-installed-nvidia-gpu-drivers):
     ```bash
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 \
         && chmod 700 get_helm.sh \
@@ -82,7 +86,8 @@ This rock can be tested locally by building it from source (on CPU) and running 
         -n gpu-operator --create-namespace \
         nvidia/gpu-operator \
         --version=v26.3.1 \
-        --set driver.enabled=false
+        --set driver.enabled=false \
+        --set toolkit.enabled=false
     ```
 
 1. Deploy KServe with the locally built rock:
