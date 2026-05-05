@@ -62,7 +62,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
 
 1. Install the NVIDIA Container Toolkit:
 
-    Follow [this guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#with-apt-ubuntu-debian).
+    Follow [this guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#with-apt-ubuntu-debian) - a disambiguation: the last part of the refence refers to [this section](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-containerd-for-kubernetes), but do not execute it just yet (see the following points).
 
 1. Set up Canonical K8s:
     ```bash
@@ -73,6 +73,12 @@ This rock can be tested locally by building it from source (on CPU) and running 
     sudo concierge prepare --trace
     cd ..
     ```
+
+1. Configure Containerd for the NVIDIA Container Toolkit:
+
+    As anticipated above, [this section](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-containerd-for-kubernetes) is to be executed at this point, by running:
+    1. `sudo nvidia-ctk runtime configure --runtime=containerd`
+    2. `sudo systemctl restart snap.k8s.containerd` (mind that this is a modified version to target Canonical K8s' `containerd` service)
 
 1. Set up [the NVIDIA GPU operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html) but [delegating neither NVIDIA GPU driver management nor NVIDIA Container Toolkit management to it](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#pre-installed-nvidia-gpu-drivers):
     ```bash
