@@ -17,6 +17,10 @@ services:
     summary: "Kserve storage initializer service"
     startup: enabled
     command: "/storage-initializer/scripts/initializer-entrypoint [ dummy-arguments ]"
+    environment:
+      SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+      REQUESTS_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
+      CURL_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
     on-success: shutdown
     on-failure: shutdown
     working-dir: /work/
@@ -43,6 +47,7 @@ parts:
     - krb5-config
     overlay-packages:
     - python3.11
+    - ca-certificates
     override-build: |
       # Ensure Python 3.11 is the default version
       update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
