@@ -49,21 +49,6 @@ This rock can be tested locally by building it from source (on CPU) and running 
     sudo rm -rf /run/containerd
     ```
 
-1. Install NVIDIA GPU drivers and utilities:
-
-    Follow the section of [this guide](https://ubuntu.com/server/docs/how-to/graphics/install-nvidia-drivers/#the-recommended-way-ubuntu-drivers-tool) for server drivers - namely by:
-    1. running `sudo apt update && sudo apt upgrade -y`
-    1. running `sudo apt install -y ubuntu-drivers-common`
-    1. running `sudo ubuntu-drivers install --gpgpu`
-    1. rebooting (e.g., `sudo reboot`)
-    1. checking that `cat /proc/driver/nvidia/version` returns the installed driver version
-    1. installing extra utilities matching the returned driver version with `sudo apt install nvidia-utils-${driver_version}-server nvidia-fabricmanager-${driver_version} libnvidia-nscq-${driver_version}`
-    1. checking that `nvidia-smi` returns the expected driver setup
-
-1. Install the NVIDIA Container Toolkit:
-
-    Follow [this guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#with-apt-ubuntu-debian) - a disambiguation: the last part of the refence refers to [this section](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-containerd-for-kubernetes), but do not execute it just yet (see the following points).
-
 1. Set up Canonical K8s:
     ```bash
     cd ../..
@@ -74,13 +59,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
     cd ..
     ```
 
-1. Configure Containerd for the NVIDIA Container Toolkit:
-
-    As anticipated above, [this section](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-containerd-for-kubernetes) is to be executed at this point, by running:
-    1. `sudo nvidia-ctk runtime configure --runtime=containerd`
-    2. `sudo systemctl restart snap.k8s.containerd` (mind that this is a modified version to target Canonical K8s' `containerd` service)
-
-1. Set up [the NVIDIA GPU operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html) but [delegating neither NVIDIA GPU driver management nor NVIDIA Container Toolkit management to it](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#pre-installed-nvidia-gpu-drivers):
+1. Set up [the NVIDIA GPU operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html):
     ```bash
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 \
         && chmod 700 get_helm.sh \
@@ -91,9 +70,39 @@ This rock can be tested locally by building it from source (on CPU) and running 
     helm install --wait --generate-name \
         -n gpu-operator --create-namespace \
         nvidia/gpu-operator \
-        --version=v26.3.1 \
-        --set driver.enabled=false \
-        --set toolkit.enabled=false
+        --version=v26.3.1
+    ```
+
+1. Test GPU access for pods:
+    ```bash
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: gpu-accessibility-test
+    spec:
+      runtimeClassName: nvidia
+      containers:
+        - name: cuda-vector-add
+          image: "k8s.gcr.io/cuda-vector-add:v0.1"
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+    EOF
+
+    kubectl logs pods/gpu-accessibility-test
+    ```
+
+    Assert the output is similar to:
+    ```log
+    pod/gpu-accessibility-test created
+
+    [Vector addition of 50000 elements]
+    Copy input data from the host memory to the CUDA device
+    CUDA kernel launch with 196 blocks of 256 threads
+    Copy output data from the CUDA device to the host memory
+    Test PASSED
+    Done
     ```
 
 1. Deploy KServe with the locally built rock:
@@ -150,6 +159,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
               memory: 2Gi
               nvidia.com/gpu: "1"
     EOF
+    kubectl patch deployment huggingface-bert-predictor-00001-deployment --type=json -p='[{"op":"add","path":"/spec/template/spec/runtimeClassName","value":"nvidia"}]'
 
     printf "\n- - - - - -\n\n"
     kubectl get -o yaml deployment/huggingface-bert-predictor-00001-deployment | grep -- image:
