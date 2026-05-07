@@ -155,7 +155,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
           modelFormat:
             name: huggingface
           args:
-            - --served_model_name=bert
+            - --model_name=bert
           storageUri: "hf://google-bert/bert-base-uncased"
           resources:
             limits:
