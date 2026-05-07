@@ -181,8 +181,8 @@ This rock can be tested locally by building it from source (on CPU) and running 
       "$(kubectl get inferenceservice huggingface-bert -o jsonpath='{.status.url}')/v1/models/bert:predict" \
       -H "content-type: application/json" \
       -d '{"instances": ["The capital of France is [MASK].", "The capital of [MASK] is paris."]}'
-
     ```
+
     Assert the output is similar to:
     ```log
     inferenceservice.serving.kserve.io/huggingface-bert created
