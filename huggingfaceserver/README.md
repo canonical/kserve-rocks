@@ -133,6 +133,13 @@ This rock can be tested locally by building it from source (on CPU) and running 
     juju wait-for application --query='status=="active"' kserve-controller
     ```
 
+1. Update the default runtime of `containerd` so that `InferenceServices` can access GPUs without explicitly defining `runtimeClassName: nvidia` in their spec:
+    ```bash
+    sudo sed -i 's/default_runtime_name = "runc"/default_runtime_name = "nvidia"/g' /etc/containerd/conf.d/99-nvidia.toml
+
+    sudo systemctl restart snap.k8s.containerd
+    ```
+
 1. Test a corresponding serving runtime is successfully initialized ([simplified example](https://kserve.github.io/website/docs/model-serving/predictive-inference/frameworks/huggingface/fill-mask)):
     ```bash
     kubectl apply -f - <<EOF
@@ -159,7 +166,6 @@ This rock can be tested locally by building it from source (on CPU) and running 
               memory: 2Gi
               nvidia.com/gpu: "1"
     EOF
-    kubectl patch deployment huggingface-bert-predictor-00001-deployment --type=json -p='[{"op":"add","path":"/spec/template/spec/runtimeClassName","value":"nvidia"}]'
 
     printf "\n- - - - - -\n\n"
     kubectl get -o yaml deployment/huggingface-bert-predictor-00001-deployment | grep -- image:
