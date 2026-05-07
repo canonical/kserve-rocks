@@ -81,6 +81,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
     metadata:
       name: gpu-accessibility-test
     spec:
+      restartPolicy: OnFailure
       runtimeClassName: nvidia
       containers:
         - name: cuda-vector-add
@@ -146,7 +147,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
     apiVersion: serving.kserve.io/v1beta1
     kind: InferenceService
     metadata:
-      name: huggingface-bert
+      name: huggingface-bert-served
     spec:
       predictor:
         model:
@@ -154,7 +155,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
           modelFormat:
             name: huggingface
           args:
-            - --model_name=bert
+            - --served_model_name=bert
           storageUri: "hf://google-bert/bert-base-uncased"
           resources:
             limits:
