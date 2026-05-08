@@ -73,39 +73,6 @@ This rock can be tested locally by building it from source (on CPU) and running 
         --version=v26.3.1
     ```
 
-1. Test GPU access for pods:
-    ```bash
-    kubectl apply -f - <<EOF
-    apiVersion: v1
-    kind: Pod
-    metadata:
-      name: gpu-accessibility-test
-    spec:
-      restartPolicy: OnFailure
-      runtimeClassName: nvidia
-      containers:
-        - name: cuda-vector-add
-          image: "k8s.gcr.io/cuda-vector-add:v0.1"
-          resources:
-            limits:
-              nvidia.com/gpu: 1
-    EOF
-
-    kubectl logs pods/gpu-accessibility-test
-    ```
-
-    Assert the output is similar to:
-    ```log
-    pod/gpu-accessibility-test created
-
-    [Vector addition of 50000 elements]
-    Copy input data from the host memory to the CUDA device
-    CUDA kernel launch with 196 blocks of 256 threads
-    Copy output data from the CUDA device to the host memory
-    Test PASSED
-    Done
-    ```
-
 1. Deploy KServe with the locally built rock:
     ```bash
     juju add-model kubeflow
@@ -139,6 +106,38 @@ This rock can be tested locally by building it from source (on CPU) and running 
     sudo sed -i 's/default_runtime_name = "runc"/default_runtime_name = "nvidia"/g' /etc/containerd/conf.d/99-nvidia.toml
 
     sudo systemctl restart snap.k8s.containerd
+    ```
+
+1. Test GPU access for pods:
+    ```bash
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: gpu-accessibility-test
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: cuda-vector-add
+          image: "k8s.gcr.io/cuda-vector-add:v0.1"
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+    EOF
+
+    kubectl logs pods/gpu-accessibility-test
+    ```
+
+    Assert the output is similar to:
+    ```log
+    pod/gpu-accessibility-test created
+
+    [Vector addition of 50000 elements]
+    Copy input data from the host memory to the CUDA device
+    CUDA kernel launch with 196 blocks of 256 threads
+    Copy output data from the CUDA device to the host memory
+    Test PASSED
+    Done
     ```
 
 1. Test a corresponding serving runtime is successfully initialized ([simplified example](https://kserve.github.io/website/docs/model-serving/predictive-inference/frameworks/huggingface/fill-mask)):
