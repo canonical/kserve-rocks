@@ -140,6 +140,25 @@ This rock can be tested locally by building it from source (on CPU) and running 
     Done
     ```
 
+    ```bash
+    kubectl apply -f - <<EOF
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: another-gpu-accessibility-test
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: is-torch-seeing-cuda
+          command: ["python"]
+          args: ["-c", "from torch.cuda import is_available; print(is_available())"]
+          image: docker.io/mattiaatcanonical/huggingfaceserver@sha256:cc536bbf03de4d0e7b074e51f6b09885791f7422807c075d018df4512b2b22f4
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+    EOF
+    ```
+
 1. Test a corresponding serving runtime is successfully initialized ([simplified example](https://kserve.github.io/website/docs/model-serving/predictive-inference/frameworks/huggingface/fill-mask)):
     ```bash
     kubectl apply -f - <<EOF
