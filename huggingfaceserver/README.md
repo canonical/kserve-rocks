@@ -127,7 +127,6 @@ This rock can be tested locally by building it from source (on CPU) and running 
               nvidia.com/gpu: 1
     EOF
 
-    printf "\n- - - - - -\n\n"
     kubectl apply -f - <<EOF
     apiVersion: v1
     kind: Pod
@@ -152,7 +151,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
     kubectl logs pods/gpu-accessibility-test
 
     printf "\n- - - - - -\n\n"
-    kubectl logs pods/gpu-accessibility-test
+    kubectl logs pods/another-gpu-accessibility-test
     ```
 
     And eventually assert the output is similar to:
