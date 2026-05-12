@@ -109,6 +109,8 @@ This rock can be tested locally by building it from source (on CPU) and running 
     ```
 
 1. Test GPU access for pods:
+
+    First, run:
     ```bash
     kubectl apply -f - <<EOF
     apiVersion: v1
@@ -125,22 +127,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
               nvidia.com/gpu: 1
     EOF
 
-    kubectl logs pods/gpu-accessibility-test
-    ```
-
-    Assert the output is similar to:
-    ```log
-    pod/gpu-accessibility-test created
-
-    [Vector addition of 50000 elements]
-    Copy input data from the host memory to the CUDA device
-    CUDA kernel launch with 196 blocks of 256 threads
-    Copy output data from the CUDA device to the host memory
-    Test PASSED
-    Done
-    ```
-
-    ```bash
+    printf "\n- - - - - -\n\n"
     kubectl apply -f - <<EOF
     apiVersion: v1
     kind: Pod
@@ -152,11 +139,38 @@ This rock can be tested locally by building it from source (on CPU) and running 
         - name: is-torch-seeing-cuda
           command: ["python"]
           args: ["-c", "from torch.cuda import is_available; print(is_available())"]
-          image: docker.io/mattiaatcanonical/huggingfaceserver@sha256:cc536bbf03de4d0e7b074e51f6b09885791f7422807c075d018df4512b2b22f4
+          image: ${your_image_registry_name}/huggingfaceserver:local
           resources:
             limits:
               nvidia.com/gpu: 1
     EOF
+    ```
+
+    After waiting for long enough, also run:
+    ```bash
+    printf "\n- - - - - -\n\n"
+    kubectl logs pods/gpu-accessibility-test
+
+    printf "\n- - - - - -\n\n"
+    kubectl logs pods/gpu-accessibility-test
+    ```
+
+    And eventually assert the output is similar to:
+    ```log
+    pod/gpu-accessibility-test created
+
+    - - - - - -
+
+    [Vector addition of 50000 elements]
+    Copy input data from the host memory to the CUDA device
+    CUDA kernel launch with 196 blocks of 256 threads
+    Copy output data from the CUDA device to the host memory
+    Test PASSED
+    Done
+
+    - - - - - -
+
+    True
     ```
 
 1. Test a corresponding serving runtime is successfully initialized ([simplified example](https://kserve.github.io/website/docs/model-serving/predictive-inference/frameworks/huggingface/fill-mask)):
@@ -280,3 +294,5 @@ This rock can be tested locally by building it from source (on CPU) and running 
     * Connection #0 to host huggingface-bert.default.10.64.140.43.nip.io left intact
     {"predictions":["paris","france"]}
     ```
+
+    ***TODO: please update these logs every time rock changes are applied***
