@@ -10,6 +10,15 @@ license: Apache-2.0
 base: ubuntu@22.04
 run-user: _daemon_
 
+# Top-level env is written to OCI config.Env (used by NVIDIA runtime hooks).
+# Keep paths fully expanded: rockcraft forbids '$' interpolation here.
+environment:
+  NVIDIA_VISIBLE_DEVICES: "all"
+  NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+  # Make CUDA/NVIDIA tools and libs available in plain shells and hooks.
+  PATH: "/usr/local/nvidia/bin:/usr/local/cuda-12.9/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  LD_LIBRARY_PATH: "/usr/local/cuda-12.9/compat:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64"
+
 platforms:
   amd64:
 
@@ -98,6 +107,20 @@ parts:
       # Promote CUDA tree into primed image.
       mkdir -p "$CRAFT_PART_INSTALL/usr/local"
       cp -a /usr/local/cuda-12.9 "$CRAFT_PART_INSTALL/usr/local/"
+
+      # Mount targets for NVIDIA runtime-injected libs/tools.
+      mkdir -p "$CRAFT_PART_INSTALL/usr/local/nvidia/bin"
+      mkdir -p "$CRAFT_PART_INSTALL/usr/local/nvidia/lib"
+      mkdir -p "$CRAFT_PART_INSTALL/usr/local/nvidia/lib64"
+
+      # Keep unversioned CUDA path available.
+      ln -sf /usr/local/cuda-12.9 "$CRAFT_PART_INSTALL/usr/local/cuda"
+
+      # Match upstream ldconfig compat behavior for Triton/PyTorch checks:
+      # https://github.com/openai/triton/issues/2507
+      # https://github.com/pytorch/pytorch/issues/107960
+      mkdir -p "$CRAFT_PART_INSTALL/etc/ld.so.conf.d"
+      echo '/usr/local/cuda-12.9/compat' > "$CRAFT_PART_INSTALL/etc/ld.so.conf.d/cuda-compat.conf"
 
       # Expose libcuda in a standard path for runtimes that don't mount the host lib.
       mkdir -p "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu"
