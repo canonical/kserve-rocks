@@ -17,7 +17,7 @@ environment:
   NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
   # Make CUDA/NVIDIA tools and libs available in plain shells and hooks.
   PATH: "/usr/local/nvidia/bin:/usr/local/cuda-12.9/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-  LD_LIBRARY_PATH: "/usr/local/cuda-12.9/compat:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64"
+  LD_LIBRARY_PATH: "/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
 
 platforms:
   amd64:
@@ -38,8 +38,9 @@ services:
       NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
       PATH: "/usr/local/nvidia/bin:/usr/local/cuda/bin:$PATH"
-      # Include CUDA "compat" (ships libcuda.so.*) and common NVIDIA lib paths first.
-      LD_LIBRARY_PATH: "/usr/local/cuda-12.9/compat:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
+      # Host-mounted driver paths only; pip packages supply the CUDA runtime.
+      # CUDA compat libs are registered via /etc/ld.so.conf.d/ as a linker fallback.
+      LD_LIBRARY_PATH: "/usr/local/nvidia/lib:/usr/local/nvidia/lib64:$LD_LIBRARY_PATH"
       # vLLM looks here when NCCL is vendored via PyPI wheels.
       VLLM_NCCL_SO_PATH: "/usr/local/lib/python3.12/dist-packages/nvidia/nccl/lib/libnccl.so.2"
       VLLM_WORKER_MULTIPROC_METHOD: "spawn"
@@ -122,10 +123,9 @@ parts:
       mkdir -p "$CRAFT_PART_INSTALL/etc/ld.so.conf.d"
       echo '/usr/local/cuda-12.9/compat' > "$CRAFT_PART_INSTALL/etc/ld.so.conf.d/cuda-compat.conf"
 
-      # Expose libcuda in a standard path for runtimes that don't mount the host lib.
-      mkdir -p "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu"
-      ln -sf /usr/local/cuda-12.9/compat/libcuda.so.1 \
-        "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libcuda.so.1"
+      # NOTE: Do NOT symlink compat libcuda.so.1 into /usr/lib/x86_64-linux-gnu/.
+      # The NVIDIA Container Runtime bind-mounts the host's matching libcuda.so.1;
+      # a baked-in symlink would shadow it and cause driver/kernel version mismatches.
 
       # Copy dpkg/apt metadata to support later apt operations inside the final image.
       mkdir -p $CRAFT_PART_INSTALL/var/lib/dpkg
