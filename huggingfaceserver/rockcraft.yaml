@@ -117,11 +117,11 @@ parts:
       # Keep unversioned CUDA path available.
       ln -sf /usr/local/cuda-12.9 "$CRAFT_PART_INSTALL/usr/local/cuda"
 
-      # Match upstream ldconfig compat behavior for Triton/PyTorch checks:
-      # https://github.com/openai/triton/issues/2507
-      # https://github.com/pytorch/pytorch/issues/107960
-      mkdir -p "$CRAFT_PART_INSTALL/etc/ld.so.conf.d"
-      echo '/usr/local/cuda-12.9/compat' > "$CRAFT_PART_INSTALL/etc/ld.so.conf.d/cuda-compat.conf"
+      # NOTE: Do NOT register the compat path in ld.so.conf.d.
+      # The NVIDIA Container Runtime mounts the host's libcuda.so.1 at a default
+      # system path (/usr/lib/x86_64-linux-gnu/). If ld.so.cache indexes the compat
+      # libcuda.so.1, the linker finds it (step 3: cache) before the host-mounted
+      # version (step 4: default paths), causing driver/kernel version mismatches.
 
       # NOTE: Do NOT symlink compat libcuda.so.1 into /usr/lib/x86_64-linux-gnu/.
       # The NVIDIA Container Runtime bind-mounts the host's matching libcuda.so.1;
