@@ -37,10 +37,10 @@ services:
       CUDA_VERSION: "12.9.1"
       NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
-      PATH: "/usr/local/nvidia/bin:/usr/local/cuda/bin:$PATH"
+      PATH: "/usr/local/nvidia/bin:/usr/local/cuda-12.9/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       # Host-mounted driver paths only; pip packages supply the CUDA runtime.
       # CUDA compat libs are registered via /etc/ld.so.conf.d/ as a linker fallback.
-      LD_LIBRARY_PATH: "/usr/local/nvidia/lib:/usr/local/nvidia/lib64:$LD_LIBRARY_PATH"
+      LD_LIBRARY_PATH: "/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
       # vLLM looks here when NCCL is vendored via PyPI wheels.
       VLLM_NCCL_SO_PATH: "/usr/local/lib/python3.12/dist-packages/nvidia/nccl/lib/libnccl.so.2"
       VLLM_WORKER_MULTIPROC_METHOD: "spawn"
