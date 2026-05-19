@@ -187,12 +187,6 @@ This rock can be tested locally by building it from source (on CPU) and running 
           storageUri: "hf://google-bert/bert-base-uncased"
           resources:
             limits:
-              cpu: "1"
-              memory: 2Gi
-              nvidia.com/gpu: "1"
-            requests:
-              cpu: "1"
-              memory: 2Gi
               nvidia.com/gpu: "1"
     EOF
 
