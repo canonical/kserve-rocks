@@ -139,9 +139,6 @@ This rock can be tested locally by building it from source (on CPU) and running 
           command: ["python"]
           args: ["-c", "from torch.cuda import is_available; print(is_available())"]
           image: ${your_image_registry_name}/huggingfaceserver:local
-          env:
-          - name: NVIDIA_VISIBLE_DEVICES
-            value: "all"
           resources:
             limits:
               nvidia.com/gpu: 1
