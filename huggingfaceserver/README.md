@@ -147,19 +147,13 @@ This rock can be tested locally by building it from source (on CPU) and running 
 
     After waiting for long enough, also run:
     ```bash
-    printf "\n- - - - - -\n\n"
     kubectl logs pods/gpu-accessibility-test
-
     printf "\n- - - - - -\n\n"
     kubectl logs pods/another-gpu-accessibility-test
     ```
 
     And eventually assert the output is similar to:
     ```log
-    pod/gpu-accessibility-test created
-
-    - - - - - -
-
     [Vector addition of 50000 elements]
     Copy input data from the host memory to the CUDA device
     CUDA kernel launch with 196 blocks of 256 threads
