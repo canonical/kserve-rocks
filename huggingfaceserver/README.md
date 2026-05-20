@@ -139,6 +139,7 @@ This rock can be tested locally by building it from source (on CPU) and running 
           command: ["python"]
           args: ["-c", "from torch.cuda import is_available; print(is_available())"]
           image: ${your_image_registry_name}/huggingfaceserver:local
+          imagePullPolicy: Always
           resources:
             limits:
               nvidia.com/gpu: 1
@@ -147,19 +148,13 @@ This rock can be tested locally by building it from source (on CPU) and running 
 
     After waiting for long enough, also run:
     ```bash
-    printf "\n- - - - - -\n\n"
     kubectl logs pods/gpu-accessibility-test
-
     printf "\n- - - - - -\n\n"
     kubectl logs pods/another-gpu-accessibility-test
     ```
 
     And eventually assert the output is similar to:
     ```log
-    pod/gpu-accessibility-test created
-
-    - - - - - -
-
     [Vector addition of 50000 elements]
     Copy input data from the host memory to the CUDA device
     CUDA kernel launch with 196 blocks of 256 threads
@@ -190,27 +185,21 @@ This rock can be tested locally by building it from source (on CPU) and running 
           storageUri: "hf://google-bert/bert-base-uncased"
           resources:
             limits:
-              cpu: "1"
-              memory: 2Gi
-              nvidia.com/gpu: "1"
-            requests:
-              cpu: "1"
-              memory: 2Gi
               nvidia.com/gpu: "1"
     EOF
 
     printf "\n- - - - - -\n\n"
-    kubectl get -o yaml deployment/huggingface-bert-predictor-00001-deployment | grep -- image:
+    kubectl get -o yaml deployment/huggingface-bert-served-predictor-00001-deployment | grep -- image:
 
     printf "\n- - - - - -\n\n"
-    kubectl logs deployment/huggingface-bert-predictor-00001-deployment -c storage-initializer
+    kubectl logs deployment/huggingface-bert-served-predictor-00001-deployment -c storage-initializer
 
     printf "\n- - - - - -\n\n"
-    kubectl exec -it deployment/huggingface-bert-predictor-00001-deployment -c kserve-container -- pebble logs
+    kubectl exec -it deployment/huggingface-bert-served-predictor-00001-deployment -c kserve-container -- pebble logs -n 100
 
     printf "\n- - - - - -\n\n"
     curl -v \
-      "$(kubectl get inferenceservice huggingface-bert -o jsonpath='{.status.url}')/v1/models/bert:predict" \
+      "$(kubectl get inferenceservice huggingface-bert-served -o jsonpath='{.status.url}')/v1/models/bert:predict" \
       -H "content-type: application/json" \
       -d '{"instances": ["The capital of France is [MASK].", "The capital of [MASK] is paris."]}'
     ```
@@ -221,63 +210,61 @@ This rock can be tested locally by building it from source (on CPU) and running 
 
     - - - - - -
 
-            image: index.docker.io/mattiaatcanonical/huggingfaceserver@sha256:cc536bbf03de4d0e7b074e51f6b09885791f7422807c075d018df4512b2b22f4
+            image: index.docker.io/mattiaatcanonical/huggingfaceserver@sha256:9a721bfe96accb54d2e7dd24cc02a999ab0ea77b382a91baee952c747a40b723
             image: gcr.io/knative-releases/knative.dev/serving/cmd/queue@sha256:c61042001b1f21c5d06bdee9b42b5e4524e4370e09d4f46347226f06db29ba0f
 
     - - - - - -
 
-    2026-05-03T20:01:19.428Z [pebble] {"type":"security","datetime":"2026-05-03T20:01:19Z","level":"WARN","event":"sys_startup:584792","description":"Starting daemon","appid":"pebble"}
-    2026-05-03T20:01:19.428Z [pebble] Started daemon.
-    2026-05-03T20:01:19.431Z [pebble] POST /v1/services 1.457255ms 202 (http+unix)
-    2026-05-03T20:01:19.433Z [pebble] Service "storage-initializer" starting: /storage-initializer/scripts/initializer-entrypoint [ hf://google-bert/bert-base-uncased /mnt/models ]
-    2026-05-03T20:01:20.436Z [pebble] GET /v1/changes/1/wait 1.00504323s 200 (http+unix)
-    2026-05-03T20:01:20.437Z [pebble] Started default services with change 1.
-    2026-05-03T20:02:27.454Z [pebble] Service "storage-initializer" stopped unexpectedly with code 0
-    2026-05-03T20:02:27.454Z [pebble] Service "storage-initializer" on-success action is "shutdown", triggering success shutdown
-    2026-05-03T20:02:27.454Z [pebble] Server exiting! Reason: <nil>
-    2026-05-03T20:02:27.454Z [pebble] {"type":"security","datetime":"2026-05-03T20:02:27Z","level":"WARN","event":"sys_shutdown:584792","description":"Shutting down daemon","appid":"pebble"}
+    2026-05-19T17:10:53.364Z [pebble] {"type":"security","datetime":"2026-05-19T17:10:53Z","level":"WARN","event":"sys_startup:584792","description":"Starting daemon","appid":"pebble"}
+    2026-05-19T17:10:53.365Z [pebble] Started daemon.
+    2026-05-19T17:10:53.368Z [pebble] POST /v1/services 1.618588ms 202 (http+unix)
+    2026-05-19T17:10:53.370Z [pebble] Service "storage-initializer" starting: /storage-initializer/scripts/initializer-entrypoint [ hf://google-bert/bert-base-uncased /mnt/models ]
+    2026-05-19T17:10:54.372Z [pebble] GET /v1/changes/1/wait 1.004309523s 200 (http+unix)
+    2026-05-19T17:10:54.373Z [pebble] Started default services with change 1.
+    2026-05-19T17:11:49.712Z [pebble] Service "storage-initializer" stopped unexpectedly with code 0
+    2026-05-19T17:11:49.712Z [pebble] Service "storage-initializer" on-success action is "shutdown", triggering success shutdown
+    2026-05-19T17:11:49.713Z [pebble] Server exiting! Reason: <nil>
+    2026-05-19T17:11:49.713Z [pebble] {"type":"security","datetime":"2026-05-19T17:11:49Z","level":"WARN","event":"sys_shutdown:584792","description":"Shutting down daemon","appid":"pebble"}
 
     - - - - - -
 
-    2026-05-03T20:09:26.907Z [huggingfaceserver] INFO 05-03 20:09:26 [importing.py:44] Triton is installed but 0 active driver(s) found (expected 1). Disabling Triton to prevent runtime errors.
-    2026-05-03T20:09:26.907Z [huggingfaceserver] INFO 05-03 20:09:26 [importing.py:68] Triton not installed or not compatible; certain GPU-related functions will not be available.
-    2026-05-03T20:09:28.848Z [huggingfaceserver] [2026-05-03 20:09:28] INFO kserve_storage.py:161: Copying contents of /mnt/models to local
-    2026-05-03T20:09:28.848Z [huggingfaceserver] [2026-05-03 20:09:28] INFO kserve_storage.py:229: Successfully copied /mnt/models to None
-    2026-05-03T20:09:28.848Z [huggingfaceserver] [2026-05-03 20:09:28] INFO kserve_storage.py:230: Model downloaded in 0.00036415600015970995 seconds.
-    2026-05-03T20:09:28.859Z [huggingfaceserver] [2026-05-03 20:09:28] INFO utils.py:53: not a supported model by vLLM
-    2026-05-03T20:09:28.860Z [huggingfaceserver] [2026-05-03 20:09:28] INFO kserve_storage.py:161: Copying contents of /mnt/models to local
-    2026-05-03T20:09:28.860Z [huggingfaceserver] [2026-05-03 20:09:28] INFO kserve_storage.py:229: Successfully copied /mnt/models to None
-    2026-05-03T20:09:28.860Z [huggingfaceserver] [2026-05-03 20:09:28] INFO kserve_storage.py:230: Model downloaded in 0.00013358199998947384 seconds.
-    2026-05-03T20:09:28.861Z [huggingfaceserver] [2026-05-03 20:09:28] INFO utils.py:53: not a supported model by vLLM
-    2026-05-03T20:09:28.861Z [huggingfaceserver] `torch_dtype` is deprecated! Use `dtype` instead!
-    2026-05-03T20:09:28.861Z [huggingfaceserver] [2026-05-03 20:09:28] INFO __main__.py:299: Loading encoder model for task 'fill_mask' in torch.float32
-    2026-05-03T20:09:29.020Z [huggingfaceserver] [2026-05-03 20:09:29] INFO encoder_model.py:184: Successfully loaded tokenizer
-    2026-05-03T20:09:29.117Z [huggingfaceserver] Some weights of the model checkpoint at /mnt/models were not used when initializing BertForMaskedLM: ['bert.pooler.dense.bias', 'bert.pooler.dense.weight', 'cls.seq_relationship.bias', 'cls.seq_relationship.weight']
-    2026-05-03T20:09:29.117Z [huggingfaceserver] - This IS expected if you are initializing BertForMaskedLM from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
-    2026-05-03T20:09:29.117Z [huggingfaceserver] - This IS NOT expected if you are initializing BertForMaskedLM from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
-    2026-05-03T20:09:29.123Z [huggingfaceserver] [2026-05-03 20:09:29] INFO encoder_model.py:207: Successfully loaded huggingface model from path /mnt/models
-    2026-05-03T20:09:29.124Z [huggingfaceserver] [2026-05-03 20:09:29] INFO utils.py:53: not a supported model by vLLM
-    2026-05-03T20:09:29.124Z [huggingfaceserver] [2026-05-03 20:09:29] INFO model_server.py:423: Registering model: bert
-    2026-05-03T20:09:29.124Z [huggingfaceserver] [2026-05-03 20:09:29] INFO model_server.py:301: Setting max asyncio worker threads as 32
-    2026-05-03T20:09:29.161Z [huggingfaceserver] [2026-05-03 20:09:29] INFO server.py:120: OpenAI endpoints registered
-    2026-05-03T20:09:29.161Z [huggingfaceserver] [2026-05-03 20:09:29] INFO server.py:130: Time series endpoints not registered
-    2026-05-03T20:09:29.162Z [huggingfaceserver] [2026-05-03 20:09:29] INFO server.py:181: Starting uvicorn with 1 workers
-    2026-05-03T20:09:29.217Z [huggingfaceserver] [2026-05-03 20:09:29] INFO server.py:83: Started server process [14]
-    2026-05-03T20:09:29.217Z [huggingfaceserver] [2026-05-03 20:09:29] INFO on.py:48: Waiting for application startup.
-    2026-05-03T20:09:29.219Z [huggingfaceserver] [2026-05-03 20:09:29] INFO server.py:70: Starting gRPC server with 4 workers
-    2026-05-03T20:09:29.219Z [huggingfaceserver] [2026-05-03 20:09:29] INFO server.py:71: Starting gRPC server on [::]:8081
-    2026-05-03T20:09:29.219Z [huggingfaceserver] [2026-05-03 20:09:29] INFO on.py:62: Application startup complete.
-    2026-05-03T20:09:29.219Z [huggingfaceserver] [2026-05-03 20:09:29] INFO server.py:215: Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+    2026-05-19T17:12:07.814Z [huggingfaceserver] [2026-05-19 17:12:07] INFO kserve_storage.py:161: Copying contents of /mnt/models to local
+    2026-05-19T17:12:07.814Z [huggingfaceserver] [2026-05-19 17:12:07] INFO kserve_storage.py:229: Successfully copied /mnt/models to None
+    2026-05-19T17:12:07.814Z [huggingfaceserver] [2026-05-19 17:12:07] INFO kserve_storage.py:230: Model downloaded in 0.0005316860001585155 seconds.
+    2026-05-19T17:12:07.826Z [huggingfaceserver] [2026-05-19 17:12:07] INFO utils.py:53: not a supported model by vLLM
+    2026-05-19T17:12:07.827Z [huggingfaceserver] [2026-05-19 17:12:07] INFO kserve_storage.py:161: Copying contents of /mnt/models to local
+    2026-05-19T17:12:07.827Z [huggingfaceserver] [2026-05-19 17:12:07] INFO kserve_storage.py:229: Successfully copied /mnt/models to None
+    2026-05-19T17:12:07.827Z [huggingfaceserver] [2026-05-19 17:12:07] INFO kserve_storage.py:230: Model downloaded in 0.00013219099992056726 seconds.
+    2026-05-19T17:12:07.828Z [huggingfaceserver] [2026-05-19 17:12:07] INFO utils.py:53: not a supported model by vLLM
+    2026-05-19T17:12:07.829Z [huggingfaceserver] `torch_dtype` is deprecated! Use `dtype` instead!
+    2026-05-19T17:12:07.829Z [huggingfaceserver] [2026-05-19 17:12:07] INFO __main__.py:299: Loading encoder model for task 'fill_mask' in torch.float16
+    2026-05-19T17:12:07.991Z [huggingfaceserver] [2026-05-19 17:12:07] INFO encoder_model.py:184: Successfully loaded tokenizer
+    2026-05-19T17:12:52.938Z [huggingfaceserver] Some weights of the model checkpoint at /mnt/models were not used when initializing BertForMaskedLM: ['bert.pooler.dense.bias', 'bert.pooler.dense.weight', 'cls.seq_relationship.bias', 'cls.seq_relationship.weight']
+    2026-05-19T17:12:52.938Z [huggingfaceserver] - This IS expected if you are initializing BertForMaskedLM from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+    2026-05-19T17:12:52.938Z [huggingfaceserver] - This IS NOT expected if you are initializing BertForMaskedLM from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+    2026-05-19T17:12:52.948Z [huggingfaceserver] [2026-05-19 17:12:52] INFO encoder_model.py:207: Successfully loaded huggingface model from path /mnt/models
+    2026-05-19T17:12:52.949Z [huggingfaceserver] [2026-05-19 17:12:52] INFO utils.py:53: not a supported model by vLLM
+    2026-05-19T17:12:52.949Z [huggingfaceserver] [2026-05-19 17:12:52] INFO model_server.py:423: Registering model: bert
+    2026-05-19T17:12:52.951Z [huggingfaceserver] [2026-05-19 17:12:52] INFO model_server.py:301: Setting max asyncio worker threads as 32
+    2026-05-19T17:12:53.055Z [huggingfaceserver] [2026-05-19 17:12:53] INFO server.py:120: OpenAI endpoints registered
+    2026-05-19T17:12:53.055Z [huggingfaceserver] [2026-05-19 17:12:53] INFO server.py:130: Time series endpoints not registered
+    2026-05-19T17:12:53.056Z [huggingfaceserver] [2026-05-19 17:12:53] INFO server.py:181: Starting uvicorn with 1 workers
+    2026-05-19T17:12:53.116Z [huggingfaceserver] [2026-05-19 17:12:53] INFO server.py:83: Started server process [36]
+    2026-05-19T17:12:53.116Z [huggingfaceserver] [2026-05-19 17:12:53] INFO on.py:48: Waiting for application startup.
+    2026-05-19T17:12:53.119Z [huggingfaceserver] [2026-05-19 17:12:53] INFO server.py:70: Starting gRPC server with 4 workers
+    2026-05-19T17:12:53.119Z [huggingfaceserver] [2026-05-19 17:12:53] INFO server.py:71: Starting gRPC server on [::]:8081
+    2026-05-19T17:12:53.119Z [huggingfaceserver] [2026-05-19 17:12:53] INFO on.py:62: Application startup complete.
+    2026-05-19T17:12:53.119Z [huggingfaceserver] [2026-05-19 17:12:53] INFO server.py:215: Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
 
     - - - - - -
 
-    * Host huggingface-bert.default.10.64.140.43.nip.io:80 was resolved.
+    * Host huggingface-bert-served.default.10.64.140.43.nip.io:80 was resolved.
     * IPv6: (none)
     * IPv4: 10.64.140.43
     *   Trying 10.64.140.43:80...
-    * Connected to huggingface-bert.default.10.64.140.43.nip.io (10.64.140.43) port 80
+    * Connected to huggingface-bert-served.default.10.64.140.43.nip.io (10.64.140.43) port 80
     > POST /v1/models/bert:predict HTTP/1.1
-    > Host: huggingface-bert.default.10.64.140.43.nip.io
+    > Host: huggingface-bert-served.default.10.64.140.43.nip.io
     > User-Agent: curl/8.5.0
     > Accept: */*
     > content-type: application/json
@@ -286,11 +273,11 @@ This rock can be tested locally by building it from source (on CPU) and running 
     < HTTP/1.1 200 OK
     < content-length: 34
     < content-type: application/json
-    < date: Sun, 03 May 2026 20:15:09 GMT
+    < date: Tue, 19 May 2026 17:14:36 GMT
     < server: istio-envoy
-    < x-envoy-upstream-service-time: 46287
+    < x-envoy-upstream-service-time: 301
     < 
-    * Connection #0 to host huggingface-bert.default.10.64.140.43.nip.io left intact
+    * Connection #0 to host huggingface-bert-served.default.10.64.140.43.nip.io left intact
     {"predictions":["paris","france"]}
     ```
 

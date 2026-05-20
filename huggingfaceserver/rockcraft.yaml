@@ -10,6 +10,15 @@ license: Apache-2.0
 base: ubuntu@22.04
 run-user: _daemon_
 
+# Top-level env is written to OCI config.Env (used by NVIDIA runtime hooks).
+# Keep paths fully expanded: rockcraft forbids '$' interpolation here.
+environment:
+  NVIDIA_VISIBLE_DEVICES: "all"
+  NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+  # Make CUDA/NVIDIA tools and libs available in plain shells and hooks.
+  PATH: "/usr/local/nvidia/bin:/usr/local/cuda-12.9/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  LD_LIBRARY_PATH: "/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+
 platforms:
   amd64:
 
@@ -28,9 +37,10 @@ services:
       CUDA_VERSION: "12.9.1"
       NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
-      PATH: "/usr/local/nvidia/bin:/usr/local/cuda/bin:$PATH"
-      # Include CUDA "compat" (ships libcuda.so.*) and common NVIDIA lib paths first.
-      LD_LIBRARY_PATH: "/usr/local/cuda-12.9/compat:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-12.9/lib:/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH"
+      PATH: "/usr/local/nvidia/bin:/usr/local/cuda-12.9/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      # Host-mounted driver paths only; pip packages supply the CUDA runtime.
+      # CUDA compat libs are registered via /etc/ld.so.conf.d/ as a linker fallback.
+      LD_LIBRARY_PATH: "/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
       # vLLM looks here when NCCL is vendored via PyPI wheels.
       VLLM_NCCL_SO_PATH: "/usr/local/lib/python3.12/dist-packages/nvidia/nccl/lib/libnccl.so.2"
       VLLM_WORKER_MULTIPROC_METHOD: "spawn"
@@ -99,10 +109,23 @@ parts:
       mkdir -p "$CRAFT_PART_INSTALL/usr/local"
       cp -a /usr/local/cuda-12.9 "$CRAFT_PART_INSTALL/usr/local/"
 
-      # Expose libcuda in a standard path for runtimes that don't mount the host lib.
-      mkdir -p "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu"
-      ln -sf /usr/local/cuda-12.9/compat/libcuda.so.1 \
-        "$CRAFT_PART_INSTALL/usr/lib/x86_64-linux-gnu/libcuda.so.1"
+      # Mount targets for NVIDIA runtime-injected libs/tools.
+      mkdir -p "$CRAFT_PART_INSTALL/usr/local/nvidia/bin"
+      mkdir -p "$CRAFT_PART_INSTALL/usr/local/nvidia/lib"
+      mkdir -p "$CRAFT_PART_INSTALL/usr/local/nvidia/lib64"
+
+      # Keep unversioned CUDA path available.
+      ln -sf /usr/local/cuda-12.9 "$CRAFT_PART_INSTALL/usr/local/cuda"
+
+      # NOTE: Do NOT register the compat path in ld.so.conf.d.
+      # The NVIDIA Container Runtime mounts the host's libcuda.so.1 at a default
+      # system path (/usr/lib/x86_64-linux-gnu/). If ld.so.cache indexes the compat
+      # libcuda.so.1, the linker finds it (step 3: cache) before the host-mounted
+      # version (step 4: default paths), causing driver/kernel version mismatches.
+
+      # NOTE: Do NOT symlink compat libcuda.so.1 into /usr/lib/x86_64-linux-gnu/.
+      # The NVIDIA Container Runtime bind-mounts the host's matching libcuda.so.1;
+      # a baked-in symlink would shadow it and cause driver/kernel version mismatches.
 
       # Copy dpkg/apt metadata to support later apt operations inside the final image.
       mkdir -p $CRAFT_PART_INSTALL/var/lib/dpkg
