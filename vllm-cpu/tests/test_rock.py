@@ -1,4 +1,4 @@
-# Copyright 2025 Canonical Ltd.
+# Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 import os
@@ -9,11 +9,13 @@ import time
 
 import pytest
 import requests
+import logging
 
 from charmed_kubeflow_chisme.rock import CheckRock
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
-_HF_CACHE_HOST = "/tmp/hf-cache"
 _HF_HOME_CONTAINER = "/tmp/huggingface"
 _MODEL = "facebook/opt-125m"
 _SERVER_PORT_CONTAINER = 8000
@@ -34,15 +36,15 @@ def vllm_server():
     check_rock = CheckRock("rockcraft.yaml")
     local_rock_image = f"{check_rock.get_name()}:{check_rock.get_version()}"
 
-    os.makedirs(_HF_CACHE_HOST, exist_ok=True)
     port = _free_port()
+    logger.info(f"Starting vLLM server container on port {port} using image {local_rock_image}")    
 
     result = subprocess.run(
         [
             "docker", "run", "-d",
             "-p", f"{port}:{_SERVER_PORT_CONTAINER}",
             "-e", f"HF_HOME={_HF_HOME_CONTAINER}",
-            "-v", f"{_HF_CACHE_HOST}:{_HF_HOME_CONTAINER}",
+            # "-v", f"{_HF_CACHE_HOST}:{_HF_HOME_CONTAINER}",
             local_rock_image,
             "--model", _MODEL,
         ],
@@ -51,6 +53,7 @@ def vllm_server():
         text=True,
     )
     container_id = result.stdout.strip()
+    logger.info(f"Started container {container_id} for vLLM server")
 
     try:
         yield f"http://localhost:{port}"
@@ -124,7 +127,7 @@ def test_vllm_version():
 def test_endpoint_completions(vllm_server):
     """Test that the vLLM server responds correctly to a completions request."""
     base_url = vllm_server
-
+    logger.info(f"Testing vLLM server at {base_url}")
     # Wait for the server to become ready
     deadline = time.monotonic() + _STARTUP_TIMEOUT_SECONDS
     while True:
@@ -140,7 +143,8 @@ def test_endpoint_completions(vllm_server):
                 f"vLLM server did not become healthy within {_STARTUP_TIMEOUT_SECONDS}s"
             )
         time.sleep(_POLL_INTERVAL_SECONDS)
-
+    
+    logger.info("vLLM server is healthy, sending completions request")
     # Send a completions request matching the README example
     response = requests.post(
         f"{base_url}/v1/completions",
@@ -153,11 +157,13 @@ def test_endpoint_completions(vllm_server):
         timeout=60,
     )
 
+    logger.info(f"Received completions response from vLLM server: {response.status_code} {response.text!r}")
     assert response.status_code == 200, (
         f"Expected HTTP 200 from /v1/completions, got {response.status_code}: {response.text!r}"
     )
 
     body = response.json()
+    logger.info(f"Parsed JSON body from completions response: {body!r}")
     assert "choices" in body and len(body["choices"]) > 0, (
         f"Expected non-empty 'choices' in response, got: {body!r}"
     )
@@ -165,3 +171,4 @@ def test_endpoint_completions(vllm_server):
     assert isinstance(text, str) and text, (
         f"Expected a non-empty text in choices[0], got: {body['choices'][0]!r}"
     )
+    logger.info(f"Received completions text from vLLM server: {text!r}")
