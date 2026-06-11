@@ -13,6 +13,17 @@ platforms:
 
 run-user: _daemon_
 
+environment:
+  VIRTUAL_ENV: "/opt/venv"
+  PATH: "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  HF_HOME: "/tmp/huggingface"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  CXX: "g++-12"
+  CC: "gcc-12"
+  # LD_PRELOAD for performance (optional, set at runtime):
+  #   x86_64: /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4:/opt/venv/lib/libiomp5.so
+  #   arm64:  /usr/lib/aarch64-linux-gnu/libtcmalloc_minimal.so.4
+
 services:
   vllm:
     override: replace
@@ -21,16 +32,7 @@ services:
     # Pass the model (and any other flags) after the image name, e.g.:
     #   docker run vllm-cpu:0.19.0 --model facebook/opt-125m
     command: "/opt/venv/bin/vllm serve [ --model dummy-model ]"
-    environment:
-      VIRTUAL_ENV: "/opt/venv"
-      PATH: "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-      HF_HOME: "/tmp/huggingface"
-      HF_HUB_DISABLE_TELEMETRY: "1"
-      CXX: "g++-12"
-      CC: "gcc-12"
-      # LD_PRELOAD for performance (optional, set at runtime):
-      #   x86_64: /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4:/opt/venv/lib/libiomp5.so
-      #   arm64:  /usr/lib/aarch64-linux-gnu/libtcmalloc_minimal.so.4
+    
 
 entrypoint-service: vllm
 
