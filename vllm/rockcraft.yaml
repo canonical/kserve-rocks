@@ -1,0 +1,190 @@
+# Based on https://github.com/vllm-project/vllm/blob/v0.19.0/docker/Dockerfile
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+# This rock installs the prebuilt vLLM CUDA wheel (the canonical GPU artifact for
+# v0.19.0) instead of recompiling vLLM's CUDA kernels from source, mirroring the
+# approach used by the huggingfaceserver rock. CUDA/NVIDIA runtime conventions are
+# borrowed from huggingfaceserver; the Python/venv layout mirrors the sibling
+# vllm-cpu rock.
+
+name: vllm
+summary: vLLM inference engine (GPU/CUDA)
+description: "vLLM v0.19.0 OpenAI-compatible inference server for NVIDIA GPUs."
+version: "0.19.0"
+license: Apache-2.0
+base: ubuntu@22.04
+run-user: _daemon_
+
+platforms:
+  amd64:
+  arm64:
+
+# Top-level env is written to OCI config.Env (used by NVIDIA runtime hooks).
+# Keep paths fully expanded: rockcraft forbids '$' interpolation here.
+environment:
+  VIRTUAL_ENV: "/opt/venv"
+  NVIDIA_VISIBLE_DEVICES: "all"
+  NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+  # Make CUDA/NVIDIA tools and libs available in plain shells and hooks.
+  PATH: "/opt/venv/bin:/usr/local/nvidia/bin:/usr/local/cuda-12.9/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  # Host-mounted driver paths only; pip packages supply the CUDA runtime.
+  LD_LIBRARY_PATH: "/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+  CXX: "g++-12"
+  CC: "gcc-12"
+
+services:
+  vllm:
+    override: replace
+    summary: "vLLM serve (GPU)"
+    startup: enabled
+    # Pass the model (and any other flags) after the image name, e.g.:
+    #   docker run --gpus all vllm:0.19.0 --model facebook/opt-125m
+    command: "/opt/venv/bin/vllm serve [ --model dummy-model ]"
+    environment:
+      HF_HOME: "/tmp/huggingface"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      CUDA: "12.9"
+      CUDA_VERSION: "12.9.1"
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+      PATH: "/opt/venv/bin:/usr/local/nvidia/bin:/usr/local/cuda-12.9/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      # Host-mounted driver paths only; pip packages supply the CUDA runtime.
+      LD_LIBRARY_PATH: "/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+      # vLLM looks here when NCCL is vendored via PyPI wheels.
+      VLLM_NCCL_SO_PATH: "/opt/venv/lib/python3.12/site-packages/nvidia/nccl/lib/libnccl.so.2"
+      VLLM_WORKER_MULTIPROC_METHOD: "spawn"
+
+entrypoint-service: vllm
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  vllm:
+    plugin: nil
+    overlay-packages:
+      # Runtime libraries commonly required by vLLM / PyTorch / CV stacks.
+      - ca-certificates
+      - ffmpeg
+      - libglib2.0-0
+      - libgl1
+      - libibverbs-dev
+      - libnuma1
+      - libsm6
+      - libxext6
+      - gcc-12
+      - g++-12
+    build-packages:
+      - build-essential
+      - ca-certificates
+      - curl
+      - git
+      - wget
+    build-environment:
+      - CUDA: "12.9"
+      - CUDA_VERSION: "12.9.1"
+    override-build: |
+      set -eux -o pipefail
+
+      # ── Per-architecture CUDA repo selection ───────────────────────────────
+      # NVIDIA publishes the apt repo under x86_64 for amd64 and sbsa for arm64.
+      case "${CRAFT_ARCH_BUILD_FOR}" in
+        amd64) CUDA_REPO_ARCH="x86_64" ;;
+        arm64) CUDA_REPO_ARCH="sbsa" ;;
+        *) echo "Unsupported architecture: ${CRAFT_ARCH_BUILD_FOR}" >&2; exit 1 ;;
+      esac
+
+      # ── CUDA repo & minimal runtime (mirrors huggingfaceserver) ────────────
+      wget "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/${CUDA_REPO_ARCH}/cuda-keyring_1.1-1_all.deb"
+      dpkg -i cuda-keyring_1.1-1_all.deb
+      apt-get -yq update
+
+      apt-get -yq install --no-install-recommends \
+        cuda-compat-12-9=575.57.08-0ubuntu1 \
+        cuda-cudart-12-9=12.9.79-1 \
+        cuda-toolkit-12-9-config-common=12.9.79-1 \
+        cuda-toolkit-12-config-common=12.9.79-1 \
+        cuda-toolkit-config-common=12.9.79-1
+
+      # Promote CUDA tree into the primed image.
+      mkdir -p "${CRAFT_PART_INSTALL}/usr/local"
+      cp -a /usr/local/cuda-12.9 "${CRAFT_PART_INSTALL}/usr/local/"
+
+      # Mount targets for NVIDIA runtime-injected libs/tools.
+      mkdir -p "${CRAFT_PART_INSTALL}/usr/local/nvidia/bin"
+      mkdir -p "${CRAFT_PART_INSTALL}/usr/local/nvidia/lib"
+      mkdir -p "${CRAFT_PART_INSTALL}/usr/local/nvidia/lib64"
+
+      # Keep an unversioned CUDA path available.
+      ln -sf /usr/local/cuda-12.9 "${CRAFT_PART_INSTALL}/usr/local/cuda"
+
+      # NOTE: Do NOT register the compat path in ld.so.conf.d and do NOT symlink
+      # the compat libcuda.so.1 into /usr/lib/*-linux-gnu/. The NVIDIA Container
+      # Runtime bind-mounts the host's matching libcuda.so.1; a baked-in copy
+      # would shadow it and cause driver/kernel version mismatches.
+
+      apt-get clean
+      rm -rf /var/lib/apt/lists/*
+
+      # ── uv + portable Python 3.12 ──────────────────────────────────────────
+      # Ubuntu 22.04 does not ship python3.12 in the default repos; uv downloads
+      # a portable Python 3.12 build automatically.
+      which uv > /dev/null 2>&1 || (curl -LsSf https://astral.sh/uv/install.sh | sh)
+      ln -sf /root/.local/bin/uv /usr/local/bin/uv
+      export PATH="/root/.local/bin:$PATH"
+
+      export UV_PYTHON_INSTALL_DIR=/opt/uv/python
+      export VIRTUAL_ENV=/opt/venv
+      uv venv --python 3.12 --seed ${VIRTUAL_ENV}
+      export PATH="${VIRTUAL_ENV}/bin:$PATH"
+
+      # ── pip / uv settings ──────────────────────────────────────────────────
+      export UV_HTTP_TIMEOUT=500
+      export UV_INDEX_STRATEGY="unsafe-best-match"
+      export UV_LINK_MODE="copy"
+      # CUDA wheel index (cu129 == CUDA 12.9).
+      export TORCH_CUDA_INDEX_URL="https://download.pytorch.org/whl/cu129"
+      export FLASHINFER_INDEX_URL="https://flashinfer.ai/whl/cu129"
+
+      # ── Install the prebuilt vLLM CUDA wheel ───────────────────────────────
+      # The wheel pulls its CUDA runtime via the nvidia-*-cu12 PyPI packages.
+      uv pip install --no-cache -v \
+        --index-strategy unsafe-best-match \
+        --extra-index-url "${TORCH_CUDA_INDEX_URL}" \
+        "vllm==0.19.0"
+      uv cache clean
+
+      # ── FlashInfer JIT cache (CUDA-version-specific index) ─────────────────
+      uv pip install --no-cache -v \
+        --index-strategy unsafe-best-match \
+        --extra-index-url "${FLASHINFER_INDEX_URL}" \
+        "flashinfer-jit-cache==0.6.6"
+      uv cache clean
+
+      # ── vllm-openai server extras (match the official published image) ─────
+      uv pip install --no-cache -v \
+        --index-strategy unsafe-best-match \
+        --extra-index-url "${TORCH_CUDA_INDEX_URL}" \
+        accelerate \
+        hf_transfer \
+        modelscope \
+        bitsandbytes \
+        timm \
+        "runai-model-streamer[s3,gcs,azure]"
+      uv cache clean
+
+      # ── Promote Python interpreter + venv into the prime image ─────────────
+      # The absolute paths must match (/opt/uv/python, /opt/venv) so that all
+      # symlinks inside the venv continue to resolve correctly inside the rock.
+      mkdir -p "${CRAFT_PART_INSTALL}/opt"
+      cp -ar /opt/uv  "${CRAFT_PART_INSTALL}/opt/uv"
+      cp -ar /opt/venv "${CRAFT_PART_INSTALL}/opt/venv"
+
+      # Ensure the vllm binary is executable.
+      chmod +x "${CRAFT_PART_INSTALL}/opt/venv/bin/vllm"
+
+      rm -rf /root/.cache
