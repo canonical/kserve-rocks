@@ -77,7 +77,7 @@ parts:
     override-build: |
       set -eux
 
-      # ── Toolchain ──────────────────────────────────────────────────────────
+      # Toolchain setup (gcc-12, g++-12, ccache)
       update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 10 \
         --slave /usr/bin/g++ g++ /usr/bin/g++-12
       export CC=/usr/bin/gcc-12
@@ -85,12 +85,12 @@ parts:
       export CCACHE_DIR=/root/.cache/ccache
       export CMAKE_CXX_COMPILER_LAUNCHER=ccache
 
-      # ── uv ─────────────────────────────────────────────────────────────────
+      # uv 
       which uv > /dev/null 2>&1 || (curl -LsSf https://astral.sh/uv/install.sh | sh)
       ln -sf /root/.local/bin/uv /usr/local/bin/uv
       export PATH="/root/.local/bin:$PATH"
 
-      # ── Python 3.12 virtual environment via uv ─────────────────────────────
+      # Python 3.12 virtual environment via uv
       # Ubuntu 22.04 does not ship python3.12 in the default repos; uv
       # downloads a portable Python 3.12 build automatically.
       export UV_PYTHON_INSTALL_DIR=/opt/uv/python
@@ -98,38 +98,38 @@ parts:
       uv venv --python 3.12 --seed ${VIRTUAL_ENV}
       export PATH="${VIRTUAL_ENV}/bin:$PATH"
 
-      # ── pip / uv settings ──────────────────────────────────────────────────
+      # pip / uv settings 
       export UV_HTTP_TIMEOUT=500
       export UV_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
       export UV_INDEX_STRATEGY="unsafe-best-match"
       export UV_LINK_MODE="copy"
       export PIP_EXTRA_INDEX_URL="${UV_EXTRA_INDEX_URL}"
 
-      # ── Build dependencies (cmake, ninja, torch CPU, etc.) ─────────────────
+      # Build dependencies (cmake, ninja, torch CPU, etc.)
       uv pip install --no-cache -v \
         --index-strategy unsafe-best-match \
         --extra-index-url "${UV_EXTRA_INDEX_URL}" \
         -r requirements/cpu-build.txt
       uv cache clean
 
-      # ── Runtime dependencies ───────────────────────────────────────────────
+      # Runtime dependencies
       uv pip install --no-cache -v \
         --index-strategy unsafe-best-match \
         --extra-index-url "${UV_EXTRA_INDEX_URL}" \
         -r requirements/cpu.txt
       uv cache clean
 
-      # ── Build vLLM wheel (CPU) ─────────────────────────────────────────────
+      # Build vLLM wheel (CPU)
       export VLLM_TARGET_DEVICE=cpu
       export MAX_JOBS=${MAX_JOBS:-$(nproc)}
 
       python setup.py bdist_wheel --dist-dir=dist --py-limited-api=cp38
 
-      # ── Install built wheel ────────────────────────────────────────────────
+      # Install built wheel
       uv pip install --no-cache dist/vllm-0.19.0*.whl
       uv cache clean
 
-      # ── Promote Python interpreter + venv into the prime image ────────────
+      # Promote Python interpreter + venv into the prime image
       # The absolute paths must match (/opt/uv/python, /opt/venv) so that all
       # symlinks inside the venv continue to resolve correctly inside the rock.
       mkdir -p "${CRAFT_PART_INSTALL}/opt"
