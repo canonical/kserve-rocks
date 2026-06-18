@@ -1,12 +1,7 @@
 # Based on https://github.com/vllm-project/vllm/blob/v0.19.0/docker/Dockerfile
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock.
-# This rock installs the prebuilt vLLM CUDA wheel (the canonical GPU artifact for
-# v0.19.0) instead of recompiling vLLM's CUDA kernels from source, mirroring the
-# approach used by the huggingfaceserver rock. CUDA/NVIDIA runtime conventions are
-# borrowed from huggingfaceserver; the Python/venv layout mirrors the sibling
-# vllm-cpu rock.
 
-name: vllm
+name: vllm-cuda-gpu
 summary: vLLM inference engine (GPU/CUDA)
 description: "vLLM v0.19.0 OpenAI-compatible inference server for NVIDIA GPUs."
 version: "0.19.0"
@@ -34,7 +29,7 @@ environment:
 services:
   vllm:
     override: replace
-    summary: "vLLM serve (GPU)"
+    summary: "vLLM serve (GPU/CUDA)"
     startup: enabled
     # Pass the model (and any other flags) after the image name, e.g.:
     #   docker run --gpus all vllm:0.19.0 --model facebook/opt-125m
