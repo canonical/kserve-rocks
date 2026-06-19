@@ -44,7 +44,6 @@ def vllm_server():
             "docker", "run", "-d",
             "-p", f"{port}:{_SERVER_PORT_CONTAINER}",
             "-e", f"HF_HOME={_HF_HOME_CONTAINER}",
-            # "-v", f"{_HF_CACHE_HOST}:{_HF_HOME_CONTAINER}",
             local_rock_image,
             "--model", _MODEL,
         ],
@@ -64,7 +63,7 @@ def vllm_server():
 
 @pytest.mark.abort_on_fail
 def test_rock():
-    """Test that the vllm-cpu rock contains the expected files and the vllm binary works."""
+    """Test that the vllm-cpu rock contains the expected files."""
     check_rock = CheckRock("rockcraft.yaml")
     rock_image = check_rock.get_name()
     rock_version = check_rock.get_version()
@@ -122,7 +121,6 @@ def test_vllm_version():
     )
 
 
-@pytest.mark.integration
 @pytest.mark.abort_on_fail
 def test_endpoint_completions(vllm_server):
     """Test that the vLLM server responds correctly to a completions request."""

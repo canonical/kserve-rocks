@@ -28,21 +28,6 @@ curl -H "content-type: application/json" \
   -d '{"model": "facebook/opt-125m", "prompt": "The capital of France is", "max_tokens": 20}'
 ```
 
-#### Optional: performance memory allocator (LD_PRELOAD)
-
-The upstream Dockerfile sets `LD_PRELOAD` for improved memory performance.
-Pass it at runtime depending on your CPU architecture:
-
-```bash
-# x86_64
-docker run -e LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4:/opt/venv/lib/libiomp5.so" \
-  vllm-cpu:0.19.0 --model facebook/opt-125m
-
-# arm64
-docker run -e LD_PRELOAD="/usr/lib/aarch64-linux-gnu/libtcmalloc_minimal.so.4" \
-  vllm-cpu:0.19.0 --model facebook/opt-125m
-```
-
 ### Building
 
 > **Note:** Building this rock compiles vLLM's C++ CPU extensions from source.

@@ -9,7 +9,6 @@ license: Apache-2.0
 base: ubuntu@22.04
 platforms:
   amd64:
-  arm64:
 
 run-user: _daemon_
 
@@ -20,9 +19,8 @@ environment:
   HF_HUB_DISABLE_TELEMETRY: "1"
   CXX: "g++-12"
   CC: "gcc-12"
-  # LD_PRELOAD for performance (optional, set at runtime):
-  #   x86_64: /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4:/opt/venv/lib/libiomp5.so
-  #   arm64:  /usr/lib/aarch64-linux-gnu/libtcmalloc_minimal.so.4
+  # LD_PRELOAD: "/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4:/opt/venv/lib/libiomp5.so"
+  # NOTE for arm64:  /usr/lib/aarch64-linux-gnu/libtcmalloc_minimal.so.4
 
 services:
   vllm:
