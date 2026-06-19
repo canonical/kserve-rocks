@@ -11,7 +11,6 @@ run-user: _daemon_
 
 platforms:
   amd64:
-  arm64:
 
 # Top-level env is written to OCI config.Env (used by NVIDIA runtime hooks).
 # Keep paths fully expanded: rockcraft forbids '$' interpolation here.
@@ -25,6 +24,13 @@ environment:
   LD_LIBRARY_PATH: "/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
   CXX: "g++-12"
   CC: "gcc-12"
+  HF_HOME: "/tmp/huggingface"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  CUDA: "12.9"
+  CUDA_VERSION: "12.9.1"
+  # vLLM looks here when NCCL is vendored via PyPI wheels.
+  VLLM_NCCL_SO_PATH: "/opt/venv/lib/python3.12/site-packages/nvidia/nccl/lib/libnccl.so.2"
+  VLLM_WORKER_MULTIPROC_METHOD: "spawn"
 
 services:
   vllm:
@@ -33,20 +39,7 @@ services:
     startup: enabled
     # Pass the model (and any other flags) after the image name, e.g.:
     #   docker run --gpus all vllm:0.19.0 --model facebook/opt-125m
-    command: "/opt/venv/bin/vllm serve [ --model dummy-model ]"
-    environment:
-      HF_HOME: "/tmp/huggingface"
-      HF_HUB_DISABLE_TELEMETRY: "1"
-      CUDA: "12.9"
-      CUDA_VERSION: "12.9.1"
-      NVIDIA_VISIBLE_DEVICES: "all"
-      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
-      PATH: "/opt/venv/bin:/usr/local/nvidia/bin:/usr/local/cuda-12.9/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-      # Host-mounted driver paths only; pip packages supply the CUDA runtime.
-      LD_LIBRARY_PATH: "/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
-      # vLLM looks here when NCCL is vendored via PyPI wheels.
-      VLLM_NCCL_SO_PATH: "/opt/venv/lib/python3.12/site-packages/nvidia/nccl/lib/libnccl.so.2"
-      VLLM_WORKER_MULTIPROC_METHOD: "spawn"
+    command: "/opt/venv/bin/vllm serve [ --model dummy-model ]"      
 
 entrypoint-service: vllm
 
@@ -85,7 +78,7 @@ parts:
     override-build: |
       set -eux -o pipefail
 
-      # ── Per-architecture CUDA repo selection ───────────────────────────────
+      # Per-architecture CUDA repo selection (keep it here for completeness, even though the current image only targets amd64).
       # NVIDIA publishes the apt repo under x86_64 for amd64 and sbsa for arm64.
       case "${CRAFT_ARCH_BUILD_FOR}" in
         amd64) CUDA_REPO_ARCH="x86_64" ;;
@@ -93,7 +86,7 @@ parts:
         *) echo "Unsupported architecture: ${CRAFT_ARCH_BUILD_FOR}" >&2; exit 1 ;;
       esac
 
-      # ── CUDA repo & minimal runtime (mirrors huggingfaceserver) ────────────
+      # CUDA repo & minimal runtime
       wget "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/${CUDA_REPO_ARCH}/cuda-keyring_1.1-1_all.deb"
       dpkg -i cuda-keyring_1.1-1_all.deb
       apt-get -yq update
@@ -125,7 +118,7 @@ parts:
       apt-get clean
       rm -rf /var/lib/apt/lists/*
 
-      # ── uv + portable Python 3.12 ──────────────────────────────────────────
+      # uv s
       # Ubuntu 22.04 does not ship python3.12 in the default repos; uv downloads
       # a portable Python 3.12 build automatically.
       which uv > /dev/null 2>&1 || (curl -LsSf https://astral.sh/uv/install.sh | sh)
@@ -137,7 +130,7 @@ parts:
       uv venv --python 3.12 --seed ${VIRTUAL_ENV}
       export PATH="${VIRTUAL_ENV}/bin:$PATH"
 
-      # ── pip / uv settings ──────────────────────────────────────────────────
+      # pip / uv settings 
       export UV_HTTP_TIMEOUT=500
       export UV_INDEX_STRATEGY="unsafe-best-match"
       export UV_LINK_MODE="copy"
@@ -145,7 +138,7 @@ parts:
       export TORCH_CUDA_INDEX_URL="https://download.pytorch.org/whl/cu129"
       export FLASHINFER_INDEX_URL="https://flashinfer.ai/whl/cu129"
 
-      # ── Install the prebuilt vLLM CUDA wheel ───────────────────────────────
+      #  Install the prebuilt vLLM CUDA wheel 
       # The wheel pulls its CUDA runtime via the nvidia-*-cu12 PyPI packages.
       uv pip install --no-cache -v \
         --index-strategy unsafe-best-match \
@@ -153,14 +146,14 @@ parts:
         "vllm==0.19.0"
       uv cache clean
 
-      # ── FlashInfer JIT cache (CUDA-version-specific index) ─────────────────
+      # FlashInfer JIT cache (CUDA-version-specific index)
       uv pip install --no-cache -v \
         --index-strategy unsafe-best-match \
         --extra-index-url "${FLASHINFER_INDEX_URL}" \
         "flashinfer-jit-cache==0.6.6"
       uv cache clean
 
-      # ── vllm-openai server extras (match the official published image) ─────
+      # vllm-openai server extras (match the official published image)
       uv pip install --no-cache -v \
         --index-strategy unsafe-best-match \
         --extra-index-url "${TORCH_CUDA_INDEX_URL}" \
@@ -172,7 +165,12 @@ parts:
         "runai-model-streamer[s3,gcs,azure]"
       uv cache clean
 
-      # ── Promote Python interpreter + venv into the prime image ─────────────
+      # Pin fastapi to <0.137.0 to avoid incompatibility with prometheus-fastapi-instrumentator 8.0.0.
+      # fastapi>=0.137.0 introduces _IncludedRouter in app.routes, which lacks a .path attribute
+      # and causes the prometheus middleware to crash with AttributeError on every request.
+      uv pip install --no-cache "fastapi[standard]<0.137.0"
+
+      # Promote Python interpreter + venv into the prime image
       # The absolute paths must match (/opt/uv/python, /opt/venv) so that all
       # symlinks inside the venv continue to resolve correctly inside the rock.
       mkdir -p "${CRAFT_PART_INSTALL}/opt"

@@ -2,7 +2,7 @@
 
 Canonical rock for [vLLM](https://github.com/vllm-project/vllm) v0.19.0, GPU/CUDA edition.
 It packages the prebuilt vLLM CUDA wheel as an OpenAI-compatible inference server and
-targets NVIDIA GPUs on `linux/amd64` (x86_64) and `linux/arm64` (aarch64).
+targets NVIDIA GPUs on `linux/amd64` (x86_64).
 
 For a CPU-only build, see [`../vllm-cpu`](../vllm-cpu).
 
@@ -22,7 +22,7 @@ Launch the server with a small model (downloads from the HuggingFace Hub on firs
 ```bash
 docker run --gpus all -p 8000:8000 \
   -e HF_HOME=/tmp/huggingface \
-  vllm:0.19.0 \
+  vllm-cuda-gpu:0.19.0 \
   --model facebook/opt-125m
 ```
 
@@ -47,6 +47,4 @@ tox -e sanity
 ```
 
 `tox -e sanity` runs on any machine (it only checks that the expected files are present
-in the rock). `tox -e integration` starts the server and exercises the
-`/v1/completions` endpoint, and therefore requires an NVIDIA GPU with the container
-runtime configured.
+in the rock).
