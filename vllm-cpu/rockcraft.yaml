@@ -1,0 +1,143 @@
+# Based on https://github.com/vllm-project/vllm/blob/v0.19.0/docker/Dockerfile.cpu
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+
+name: vllm-cpu
+summary: vLLM inference engine (CPU-only)
+description: "vLLM v0.19.0 inference server for CPU platforms (x86_64 and arm64)."
+version: "0.19.0"
+license: Apache-2.0
+base: ubuntu@22.04
+platforms:
+  amd64:
+
+run-user: _daemon_
+
+environment:
+  VIRTUAL_ENV: "/opt/venv"
+  PATH: "/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  HF_HOME: "/tmp/huggingface"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  CXX: "g++-12"
+  CC: "gcc-12"
+  # LD_PRELOAD: "/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4:/opt/venv/lib/libiomp5.so"
+  # NOTE for arm64:  /usr/lib/aarch64-linux-gnu/libtcmalloc_minimal.so.4
+
+services:
+  vllm:
+    override: replace
+    summary: "vLLM serve (CPU)"
+    startup: enabled
+    # Pass the model (and any other flags) after the image name, e.g.:
+    #   docker run vllm-cpu:0.19.0 --model facebook/opt-125m
+    command: "/opt/venv/bin/vllm serve [ --model dummy-model ]"
+    
+
+entrypoint-service: vllm
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  vllm:
+    plugin: nil
+    source: https://github.com/vllm-project/vllm.git
+    source-tag: v0.19.0
+
+    build-packages:
+      - build-essential
+      - ccache
+      - curl
+      - gcc-12
+      - g++-12
+      - git
+      - libnuma-dev
+      - make
+      - xz-utils
+
+    overlay-packages:
+      # Runtime libraries needed by vLLM / PyTorch
+      - ca-certificates
+      - ffmpeg
+      - gcc-12
+      - g++-12
+      - libglib2.0-0
+      - libgl1
+      - libnuma1
+      - libtcmalloc-minimal4
+      - libsm6
+      - libxext6
+
+    override-build: |
+      set -eux
+
+      # Toolchain setup (gcc-12, g++-12, ccache)
+      update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 10 \
+        --slave /usr/bin/g++ g++ /usr/bin/g++-12
+      export CC=/usr/bin/gcc-12
+      export CXX=/usr/bin/g++-12
+      export CCACHE_DIR=/root/.cache/ccache
+      export CMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      # uv 
+      which uv > /dev/null 2>&1 || (curl -LsSf https://astral.sh/uv/install.sh | sh)
+      ln -sf /root/.local/bin/uv /usr/local/bin/uv
+      export PATH="/root/.local/bin:$PATH"
+
+      # Python 3.12 virtual environment via uv
+      # Ubuntu 22.04 does not ship python3.12 in the default repos; uv
+      # downloads a portable Python 3.12 build automatically.
+      export UV_PYTHON_INSTALL_DIR=/opt/uv/python
+      export VIRTUAL_ENV=/opt/venv
+      uv venv --python 3.12 --seed ${VIRTUAL_ENV}
+      export PATH="${VIRTUAL_ENV}/bin:$PATH"
+
+      # pip / uv settings 
+      export UV_HTTP_TIMEOUT=500
+      export UV_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
+      export UV_INDEX_STRATEGY="unsafe-best-match"
+      export UV_LINK_MODE="copy"
+      export PIP_EXTRA_INDEX_URL="${UV_EXTRA_INDEX_URL}"
+
+      # Build dependencies (cmake, ninja, torch CPU, etc.)
+      uv pip install --no-cache -v \
+        --index-strategy unsafe-best-match \
+        --extra-index-url "${UV_EXTRA_INDEX_URL}" \
+        -r requirements/cpu-build.txt
+      uv cache clean
+
+      # Runtime dependencies
+      uv pip install --no-cache -v \
+        --index-strategy unsafe-best-match \
+        --extra-index-url "${UV_EXTRA_INDEX_URL}" \
+        -r requirements/cpu.txt
+      uv cache clean
+
+      # Build vLLM wheel (CPU)
+      export VLLM_TARGET_DEVICE=cpu
+      export MAX_JOBS=${MAX_JOBS:-$(nproc)}
+
+      python setup.py bdist_wheel --dist-dir=dist --py-limited-api=cp38
+
+      # Install built wheel
+      uv pip install --no-cache dist/vllm-0.19.0*.whl
+      uv cache clean
+
+      # Pin fastapi to <0.137.0 to avoid incompatibility with prometheus-fastapi-instrumentator 8.0.0.
+      # fastapi>=0.137.0 introduces _IncludedRouter in app.routes, which lacks a .path attribute
+      # and causes the prometheus middleware to crash with AttributeError on every request.
+      uv pip install --no-cache "fastapi[standard]<0.137.0"
+
+      # Promote Python interpreter + venv into the prime image
+      # The absolute paths must match (/opt/uv/python, /opt/venv) so that all
+      # symlinks inside the venv continue to resolve correctly inside the rock.
+      mkdir -p "${CRAFT_PART_INSTALL}/opt"
+      cp -ar /opt/uv  "${CRAFT_PART_INSTALL}/opt/uv"
+      cp -ar /opt/venv "${CRAFT_PART_INSTALL}/opt/venv"
+
+      # Ensure the vllm binary is executable
+      chmod +x "${CRAFT_PART_INSTALL}/opt/venv/bin/vllm"
