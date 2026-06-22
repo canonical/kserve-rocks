@@ -39,6 +39,7 @@ curl -H "content-type: application/json" \
 > **Note:** Building this rock downloads multi-gigabyte CUDA wheels (PyTorch,
 > NVIDIA runtime libraries, FlashInfer). The build itself runs on CPU and does not
 > require a GPU; only running the server does.
+> This takes approximately 30–60 minutes depending on the machine.
 
 ```bash
 tox -e pack
