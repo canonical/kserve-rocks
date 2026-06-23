@@ -38,7 +38,7 @@ services:
     summary: "vLLM serve (GPU/CUDA)"
     startup: enabled
     # Pass the model (and any other flags) after the image name, e.g.:
-    #   docker run --gpus all vllm:0.19.0 --model facebook/opt-125m
+    #   docker run --gpus all vllm-cuda-gpu:0.19.0 --model facebook/opt-125m
     command: "/opt/venv/bin/vllm serve [ --model dummy-model ]"      
 
 entrypoint-service: vllm
@@ -90,7 +90,9 @@ parts:
       wget "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/${CUDA_REPO_ARCH}/cuda-keyring_1.1-1_all.deb"
       dpkg -i cuda-keyring_1.1-1_all.deb
       apt-get -yq update
-
+      # Cuda 12.9 runtime packages (libcudart, libcuda, etc.) are pinned to the exact version used by the vLLM wheel. 
+      # See this repo https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ to find the exact version of each package. 
+      # The vLLM wheel is built against CUDA 12.9.79, which is the latest 12.9 release as of this writing (2026-06-23).
       apt-get -yq install --no-install-recommends \
         cuda-compat-12-9=575.57.08-0ubuntu1 \
         cuda-cudart-12-9=12.9.79-1 \
@@ -118,7 +120,7 @@ parts:
       apt-get clean
       rm -rf /var/lib/apt/lists/*
 
-      # uv s
+      # uv installation
       # Ubuntu 22.04 does not ship python3.12 in the default repos; uv downloads
       # a portable Python 3.12 build automatically.
       which uv > /dev/null 2>&1 || (curl -LsSf https://astral.sh/uv/install.sh | sh)
@@ -135,7 +137,10 @@ parts:
       export UV_INDEX_STRATEGY="unsafe-best-match"
       export UV_LINK_MODE="copy"
       # CUDA wheel index (cu129 == CUDA 12.9).
+      # See https://pytorch.org/get-started/locally/#start-locally for the official PyTorch CUDA wheel index URLs.
       export TORCH_CUDA_INDEX_URL="https://download.pytorch.org/whl/cu129"
+      # FlashInfer wheel index (cu129 == CUDA 12.9).
+      # See https://docs.flashinfer.ai/installation.html for the official FlashInfer CUDA wheel index URLs.
       export FLASHINFER_INDEX_URL="https://flashinfer.ai/whl/cu129"
 
       #  Install the prebuilt vLLM CUDA wheel 

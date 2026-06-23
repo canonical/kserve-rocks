@@ -3,13 +3,9 @@
 
 import logging
 import shlex
-import socket
 import subprocess
-import time
 
 import pytest
-import requests
-
 from charmed_kubeflow_chisme.rock import CheckRock
 
 logger = logging.getLogger(__name__)
@@ -49,3 +45,31 @@ def test_rock():
             check=True,
         )
     logger.info("All expected paths exist in the rock.")
+
+
+@pytest.mark.abort_on_fail
+def test_vllm_version():
+    """Test that the vllm binary reports the expected version."""
+    check_rock = CheckRock("rockcraft.yaml")
+    rock_image = check_rock.get_name()
+    rock_version = check_rock.get_version()
+    local_rock_image = f"{rock_image}:{rock_version}"
+
+    result = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--entrypoint",
+            "/opt/venv/bin/vllm",
+            local_rock_image,
+            "--version",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert (
+        "0.19.0" in result.stdout
+    ), f"Expected vllm version 0.19.0 in output, got: {result.stdout!r}"

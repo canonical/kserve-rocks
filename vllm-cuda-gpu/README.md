@@ -1,4 +1,4 @@
-## vllm
+## vllm-cuda-gpu
 
 Canonical rock for [vLLM](https://github.com/vllm-project/vllm) v0.19.0, GPU/CUDA edition.
 It packages the prebuilt vLLM CUDA wheel as an OpenAI-compatible inference server and
