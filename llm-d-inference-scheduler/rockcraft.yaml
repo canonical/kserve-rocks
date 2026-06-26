@@ -19,10 +19,24 @@ platforms:
 
 # Top-level env is written to the OCI config.Env. Keep paths fully expanded:
 # rockcraft forbids '$' interpolation here.
+#
+# KServe schedules this image with a read-only root filesystem
+# (securityContext.readOnlyRootFilesystem: true, see the
+# kserve-config-llm-scheduler LLMInferenceServiceConfig preset) and mounts no
+# writable volume. Pebble must create its control socket, state file and
+# identity key at runtime, so its data directory is relocated onto the writable
+# /dev/shm tmpfs (which stays writable under a read-only root). PEBBLE_COPY_ONCE
+# seeds the relocated directory with the baked-in service layers on first start.
+# Runtime caches (HOME, HuggingFace) are pointed at /dev/shm for the same reason.
+# Remove the relocation once pebble no longer needs to always write state to
+# disk: https://github.com/canonical/pebble/issues/462.
 environment:
   PYTHONPATH: "/usr/local/lib/python3.12/site-packages:/usr/lib/python3.12/site-packages"
   PYTHON: "python3.12"
-  HF_HOME: "/tmp/.cache"
+  HF_HOME: "/dev/shm/.cache/huggingface"
+  HOME: "/dev/shm"
+  PEBBLE: "/dev/shm/.pebble"
+  PEBBLE_COPY_ONCE: "/var/lib/pebble/default"
 
 entrypoint-service: epp
 services:
@@ -30,7 +44,9 @@ services:
     override: replace
     summary: "llm-d inference scheduler (epp) service"
     startup: enabled
-    command: "/app/epp [ dummy-arguments ]"
+    command: "app/epp [ dummy-arguments ]"
+    # working-dir: "/app"
+    # command: "/bin/bash /opt/pebble/epp.sh [ dummy-arguments ]"
     on-success: shutdown
     on-failure: shutdown
 
@@ -68,6 +84,7 @@ parts:
       - libstdc++6
       - libzmq5
       - python3.12
+      # - python3.12-dev
     build-environment:
       # Pin the versions used by the upstream Dockerfile.epp.
       - KVCACHE_MANAGER_VERSION: "v0.3.2"
@@ -140,5 +157,14 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/usr/bin
       ln -sf /usr/bin/python3.12 $CRAFT_PART_INSTALL/usr/bin/python3
       ln -sf /usr/bin/python3.12 $CRAFT_PART_INSTALL/usr/bin/python
-
+      
       rm -rf /root/.cache
+
+  # scripts:
+  #   plugin: dump
+  #   after: [epp]
+  #   source: .
+  #   organize:
+  #     bin/epp.sh: opt/pebble/epp.sh
+  #   stage:
+  #     - opt/pebble/epp.sh
