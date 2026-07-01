@@ -81,7 +81,6 @@ parts:
       - libstdc++6
       - libzmq5
       - python3.12
-      # - python3.12-dev
     build-environment:
       # Pin the versions used by the upstream Dockerfile.epp.
       - KVCACHE_MANAGER_VERSION: "v0.3.2"
