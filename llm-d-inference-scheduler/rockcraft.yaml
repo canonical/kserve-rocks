@@ -28,8 +28,7 @@ platforms:
 # /dev/shm tmpfs (which stays writable under a read-only root). PEBBLE_COPY_ONCE
 # seeds the relocated directory with the baked-in service layers on first start.
 # Runtime caches (HOME, HuggingFace) are pointed at /dev/shm for the same reason.
-# Remove the relocation once pebble no longer needs to always write state to
-# disk: https://github.com/canonical/pebble/issues/462.
+
 environment:
   PYTHONPATH: "/usr/local/lib/python3.12/site-packages:/usr/lib/python3.12/site-packages"
   PYTHON: "python3.12"
@@ -45,8 +44,6 @@ services:
     summary: "llm-d inference scheduler (epp) service"
     startup: enabled
     command: "app/epp [ dummy-arguments ]"
-    # working-dir: "/app"
-    # command: "/bin/bash /opt/pebble/epp.sh [ dummy-arguments ]"
     on-success: shutdown
     on-failure: shutdown
 
@@ -159,12 +156,3 @@ parts:
       ln -sf /usr/bin/python3.12 $CRAFT_PART_INSTALL/usr/bin/python
       
       rm -rf /root/.cache
-
-  # scripts:
-  #   plugin: dump
-  #   after: [epp]
-  #   source: .
-  #   organize:
-  #     bin/epp.sh: opt/pebble/epp.sh
-  #   stage:
-  #     - opt/pebble/epp.sh
