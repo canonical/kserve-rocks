@@ -1,9 +1,9 @@
 # Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import pytest
 import subprocess
 
+import pytest
 from charmed_kubeflow_chisme.rock import CheckRock
 
 
