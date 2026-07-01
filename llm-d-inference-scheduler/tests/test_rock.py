@@ -5,7 +5,6 @@ import logging
 import subprocess
 
 import pytest
-
 from charmed_kubeflow_chisme.rock import CheckRock
 
 logger = logging.getLogger(__name__)
@@ -58,9 +57,9 @@ def test_epp_dynamic_libraries_resolve(rock_image):
     """All shared libraries the CGO binary links against resolve inside the rock."""
     result = _run_in_rock(rock_image, "ldd /app/epp")
     logger.info("ldd /app/epp:\n%s", result.stdout)
-    assert "not found" not in result.stdout, (
-        f"Unresolved shared libraries in /app/epp:\n{result.stdout}"
-    )
+    assert (
+        "not found" not in result.stdout
+    ), f"Unresolved shared libraries in /app/epp:\n{result.stdout}"
 
 
 @pytest.mark.abort_on_fail
