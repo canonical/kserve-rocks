@@ -85,7 +85,7 @@ parts:
       # Pin the versions used by the upstream Dockerfile.epp.
       - KVCACHE_MANAGER_VERSION: "v0.3.2"
       - TOKENIZERS_VERSION: "v1.22.1"
-      - TARGETOS: "linux"
+      - TARGETOS: "linux:-linux"
       - TARGETARCH: "amd64"
     override-build: |
       set -eux
@@ -110,7 +110,7 @@ parts:
         ./llm-d-kv-cache-manager/pkg/preprocessing/chat_completions
 
       # HuggingFace tokenizer bindings (static lib) required by the CGO build.
-      # The RELEASE_VERSION must match the one used by the imported
+      # The TOKENIZERS_VERSION must match the one used by the imported
       # llm-d-kv-cache-manager version.
       mkdir -p lib
       curl -L "https://github.com/daulet/tokenizers/releases/download/${TOKENIZERS_VERSION}/libtokenizers.${TARGETOS}-${TARGETARCH}.tar.gz" \
