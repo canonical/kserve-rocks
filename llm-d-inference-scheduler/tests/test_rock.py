@@ -18,18 +18,20 @@ def rock_image() -> str:
     return f"{check_rock.get_name()}:{check_rock.get_version()}"
 
 
-def _run_in_rock(rock_image: str, command: str) -> subprocess.CompletedProcess:
+def _run_in_rock(
+    rock_image: str, command: str, override_entrypoint: bool = True
+) -> subprocess.CompletedProcess:
     """Run a shell command inside the rock and return the completed process."""
     return subprocess.run(
         [
             "docker",
             "run",
             "--rm",
-            "--entrypoint",
-            "/bin/bash",
-            rock_image,
-            "-c",
-            command,
+            *(
+                ["--entrypoint", "/bin/bash", rock_image, "-c", command]
+                if override_entrypoint
+                else [rock_image, command]
+            ),
         ],
         check=True,
         capture_output=True,
@@ -68,17 +70,7 @@ def test_epp_runs(rock_image):
     # `epp --help` exercises binary startup without requiring a running model
     # server. argparse-style runners exit non-zero on --help, so tolerate the
     # exit code and assert on the absence of a dynamic-linker failure instead.
-    result = subprocess.run(
-        [
-            "docker",
-            "run",
-            "--rm",
-            rock_image,
-            "--help",
-        ],
-        capture_output=True,
-        text=True,
-    )
+    result = _run_in_rock(rock_image, "--help", override_entrypoint=False)
     output = result.stdout + result.stderr
     logger.info("epp --help output:\n%s", output)
     assert "error while loading shared libraries" not in output, output
