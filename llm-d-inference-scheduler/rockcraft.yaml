@@ -87,6 +87,8 @@ parts:
       - TOKENIZERS_VERSION: "v1.22.1"
       - TARGETOS: "linux"
       - TARGETARCH: "amd64"
+      - COMMIT_SHA: "86f5af75c31b7b6e4dbc8a2d1ed96fcf7c12d299" # on the original repo and branch run $(git rev-parse HEAD)
+      - BUILD_REF: "v0.4.0" # on the original repo and branch run $(git describe --abbrev=0)
     override-build: |
       set -eux
 
@@ -126,7 +128,7 @@ parts:
       export CGO_CFLAGS="$(python3.12-config --cflags) -I$(pwd)/lib"
       export CGO_LDFLAGS="$(python3.12-config --ldflags --embed) -L$(pwd)/lib -ltokenizers -ldl -lm"
       go build -a -o bin/epp \
-        -ldflags="-extldflags '-L$(pwd)/lib'" \
+        -ldflags="-extldflags '-L$(pwd)/lib' -X sigs.k8s.io/gateway-api-inference-extension/version.CommitSHA=${COMMIT_SHA} -X sigs.k8s.io/gateway-api-inference-extension/version.BuildRef=${BUILD_REF}" \
         cmd/epp/main.go
 
       # Install the binary at the upstream runtime path (/app/epp).
