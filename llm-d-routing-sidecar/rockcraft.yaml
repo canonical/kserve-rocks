@@ -74,7 +74,3 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/app
       cp bin/pd-sidecar $CRAFT_PART_INSTALL/app/pd-sidecar
       chmod +x $CRAFT_PART_INSTALL/app/pd-sidecar
-
-      # Ship the third-party licenses in the final rock.
-      mkdir -p $CRAFT_PART_INSTALL/third_party
-      cp -r third_party $CRAFT_PART_INSTALL/third_party/
