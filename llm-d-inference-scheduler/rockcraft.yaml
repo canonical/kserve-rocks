@@ -1,0 +1,159 @@
+# Based on https://github.com/llm-d/llm-d-router/blob/v0.4.0/Dockerfile.epp
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+#
+# This rock builds the llm-d "Endpoint Picker" (epp) inference scheduler binary.
+# Unlike a plain Go service, the upstream image is a CGO build that links
+# libpython3.12 and a static HuggingFace tokenizers library, and ships a Python
+# 3.12 runtime with the chat-completions dependencies installed at runtime.
+
+name: llm-d-inference-scheduler
+summary: llm-d inference scheduler (Endpoint Picker)
+description: "llm-d Endpoint Picker (epp) inference scheduler v0.4.0."
+version: "0.4.0"
+license: Apache-2.0
+base: ubuntu@24.04
+run-user: _daemon_
+
+platforms:
+  amd64:
+
+# Top-level env is written to the OCI config.Env. Keep paths fully expanded:
+# rockcraft forbids '$' interpolation here.
+#
+# KServe schedules this image with a read-only root filesystem
+# (securityContext.readOnlyRootFilesystem: true, see the
+# kserve-config-llm-scheduler LLMInferenceServiceConfig preset) and mounts no
+# writable volume. Pebble must create its control socket, state file and
+# identity key at runtime, so its data directory is relocated onto the writable
+# /dev/shm tmpfs (which stays writable under a read-only root). PEBBLE_COPY_ONCE
+# seeds the relocated directory with the baked-in service layers on first start.
+# Runtime caches (HOME, HuggingFace) are pointed at /dev/shm for the same reason.
+
+environment:
+  PYTHONPATH: "/usr/local/lib/python3.12/site-packages:/usr/lib/python3.12/site-packages"
+  PYTHON: "python3.12"
+  HF_HOME: "/dev/shm/.cache/huggingface"
+  HOME: "/dev/shm"
+  PEBBLE: "/dev/shm/.pebble"
+  PEBBLE_COPY_ONCE: "/var/lib/pebble/default"
+
+entrypoint-service: epp
+services:
+  epp:
+    override: replace
+    summary: "llm-d inference scheduler (epp) service"
+    startup: enabled
+    command: "app/epp [ dummy-arguments ]"
+    on-success: shutdown
+    on-failure: shutdown
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-24.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  epp:
+    plugin: go
+    source: https://github.com/llm-d/llm-d-router
+    source-type: git
+    source-tag: v0.4.0
+    build-snaps:
+      - go/1.24/stable
+    build-packages:
+      - build-essential
+      - ca-certificates
+      - clang
+      - curl
+      - git
+      - libpython3.12-dev
+      - libzmq3-dev
+      - pkg-config
+      - python3-pip
+      - python3.12-dev
+    overlay-packages:
+      # Runtime libraries needed by the CGO binary and the Python runtime.
+      - ca-certificates
+      - libpython3.12t64
+      - libstdc++6
+      - libzmq5
+      - python3.12
+    build-environment:
+      # Pin the versions used by the upstream Dockerfile.epp.
+      - KVCACHE_MANAGER_VERSION: "v0.3.2"
+      - TOKENIZERS_VERSION: "v1.22.1"
+      - TARGETOS: "linux"
+      - TARGETARCH: "amd64"
+      - COMMIT_SHA: "86f5af75c31b7b6e4dbc8a2d1ed96fcf7c12d299" # on the original repo and branch run $(git rev-parse HEAD)
+      - BUILD_REF: "v0.4.0" # on the original repo and branch run $(git describe --abbrev=0)
+    override-build: |
+      set -eux
+
+      # Empty the build directory and copy in the files referenced by the
+      # upstream Dockerfile (mirrors the COPY steps).
+      rm -rf ./*
+      cp $CRAFT_PART_SRC/go.mod $CRAFT_PART_SRC/go.sum ./
+      cp -r $CRAFT_PART_SRC/cmd ./cmd
+      cp -r $CRAFT_PART_SRC/pkg ./pkg
+      cp -r $CRAFT_PART_SRC/scripts ./scripts
+
+      go mod download
+
+      # Fetch the chat-completions Python requirements; these are installed into
+      # the final image and loaded at runtime by the KV-cache manager.
+      curl -L "https://raw.githubusercontent.com/llm-d/llm-d-kv-cache-manager/${KVCACHE_MANAGER_VERSION}/pkg/preprocessing/chat_completions/requirements.txt" \
+        -o ./requirements.txt
+
+      # Fetch the Python wrapper module shipped alongside the binary.
+      bash scripts/fetch-python-wrapper.sh "${KVCACHE_MANAGER_VERSION}" \
+        ./llm-d-kv-cache-manager/pkg/preprocessing/chat_completions
+
+      # HuggingFace tokenizer bindings (static lib) required by the CGO build.
+      # The TOKENIZERS_VERSION must match the one used by the imported
+      # llm-d-kv-cache-manager version.
+      mkdir -p lib
+      curl -L "https://github.com/daulet/tokenizers/releases/download/${TOKENIZERS_VERSION}/libtokenizers.${TARGETOS}-${TARGETARCH}.tar.gz" \
+        | tar -xz -C lib
+      ranlib lib/*.a
+
+      # CGO build of the endpoint picker (epp), linking libpython3.12 and the
+      # static tokenizers library. python3.12-config supplies the Python
+      # compile/link flags.
+      export CGO_ENABLED=1
+      export GOOS="${TARGETOS}"
+      export GOARCH="${TARGETARCH}"
+      export CGO_CFLAGS="$(python3.12-config --cflags) -I$(pwd)/lib"
+      export CGO_LDFLAGS="$(python3.12-config --ldflags --embed) -L$(pwd)/lib -ltokenizers -ldl -lm"
+      go build -a -o bin/epp \
+        -ldflags="-extldflags '-L$(pwd)/lib' -X sigs.k8s.io/gateway-api-inference-extension/version.CommitSHA=${COMMIT_SHA} -X sigs.k8s.io/gateway-api-inference-extension/version.BuildRef=${BUILD_REF}" \
+        cmd/epp/main.go
+
+      # Install the binary at the upstream runtime path (/app/epp).
+      mkdir -p $CRAFT_PART_INSTALL/app
+      cp bin/epp $CRAFT_PART_INSTALL/app/epp
+      chmod +x $CRAFT_PART_INSTALL/app/epp
+
+      # Install the Python runtime dependencies (excluding torch, like upstream)
+      # into the final image's site-packages.
+      SITE_PACKAGES=$CRAFT_PART_INSTALL/usr/local/lib/python3.12/site-packages
+      mkdir -p $SITE_PACKAGES
+      sed '/^torch\b/d' ./requirements.txt > ./requirements.notorch.txt
+      python3.12 -m pip install --no-cache-dir --break-system-packages \
+        --target $SITE_PACKAGES -r ./requirements.notorch.txt
+      python3.12 -m pip install --no-cache-dir --break-system-packages \
+        --target $SITE_PACKAGES PyYAML
+
+      # Install the wrapper module into site-packages.
+      cp ./llm-d-kv-cache-manager/pkg/preprocessing/chat_completions/render_jinja_template_wrapper.py \
+        $SITE_PACKAGES/
+
+      # python3.12 does not create the python3/python symlinks automatically;
+      # add them to mirror the upstream runtime image.
+      mkdir -p $CRAFT_PART_INSTALL/usr/bin
+      ln -sf /usr/bin/python3.12 $CRAFT_PART_INSTALL/usr/bin/python3
+      ln -sf /usr/bin/python3.12 $CRAFT_PART_INSTALL/usr/bin/python
+      
+      rm -rf /root/.cache
