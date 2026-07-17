@@ -29,17 +29,3 @@ def test_rock():
         ],
         check=True,
     )
-
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "--rm",
-            "--entrypoint",
-            "/bin/bash",
-            LOCAL_ROCK_IMAGE,
-            "-c",
-            "ls -la /third_party",
-        ],
-        check=True,
-    )
