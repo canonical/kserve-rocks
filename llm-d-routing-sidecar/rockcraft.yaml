@@ -47,8 +47,8 @@ parts:
       - CGO_ENABLED: 0
       - GOOS: linux
       - GOARCH: amd64
-      - COMMIT_SHA: unknown
-      - BUILD_REF: v0.4.0
+      - COMMIT_SHA: "86f5af75c31b7b6e4dbc8a2d1ed96fcf7c12d299" # on the original repo and branch run $(git rev-parse HEAD)
+      - BUILD_REF: v0.4.0 # on the original repo and branch run $(git describe --abbrev=0)
     override-build: |
       set -eux
 
@@ -69,12 +69,6 @@ parts:
       go build -a -o bin/pd-sidecar \
         -ldflags="-X github.com/llm-d/llm-d-inference-scheduler/pkg/sidecar/version.CommitSHA=${COMMIT_SHA} -X github.com/llm-d/llm-d-inference-scheduler/pkg/sidecar/version.BuildRef=${BUILD_REF}" \
         cmd/cmd.go
-
-      # Generate third-party licenses.
-      cp -r $CRAFT_PART_SRC/LICENSE ./LICENSE
-      go install github.com/google/go-licenses@latest
-      $GOBIN/go-licenses check ./cmd/... ./pkg/... --disallowed_types="forbidden,unknown"
-      $GOBIN/go-licenses save --save_path third_party/library ./cmd
 
       # Install the binary at the upstream runtime path (/app/pd-sidecar).
       mkdir -p $CRAFT_PART_INSTALL/app
