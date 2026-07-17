@@ -1,0 +1,76 @@
+# Based on https://github.com/llm-d/llm-d-router/blob/v0.4.0/Dockerfile.sidecar
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+#
+# This rock builds the llm-d routing sidecar (pd-sidecar) binary. Unlike the
+# inference scheduler (epp), the sidecar is a plain Go build (CGO disabled) that
+# ships a single static binary, so this rock mirrors the kserve-router rock.
+
+name: llm-d-routing-sidecar
+summary: llm-d routing sidecar (pd-sidecar)
+description: "llm-d routing sidecar (pd-sidecar) v0.4.0."
+version: "0.4.0"
+license: Apache-2.0
+base: ubuntu@24.04
+run-user: _daemon_
+
+platforms:
+  amd64:
+
+entrypoint-service: routing-sidecar
+services:
+  routing-sidecar:
+    override: replace
+    summary: "llm-d routing sidecar (pd-sidecar) service"
+    startup: enabled
+    command: "/app/pd-sidecar [ dummy-arguments ]"
+    on-success: shutdown
+    on-failure: shutdown
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-24.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  routing-sidecar:
+    plugin: go
+    source: https://github.com/llm-d/llm-d-router
+    source-type: git
+    source-tag: v0.4.0
+    build-snaps:
+      - go/1.24/stable
+    build-environment:
+      # Plain Go build, mirroring the upstream Dockerfile.sidecar.
+      - CGO_ENABLED: 0
+      - GOOS: linux
+      - GOARCH: amd64
+      - COMMIT_SHA: "86f5af75c31b7b6e4dbc8a2d1ed96fcf7c12d299" # on the original repo and branch run $(git rev-parse HEAD)
+      - BUILD_REF: v0.4.0 # on the original repo and branch run $(git describe --abbrev=0)
+    override-build: |
+      set -eux
+
+      # Empty the build directory and copy in the files referenced by the
+      # upstream Dockerfile (mirrors the COPY steps).
+      rm -rf ./*
+      cp $CRAFT_PART_SRC/go.mod $CRAFT_PART_SRC/go.sum ./
+
+      go mod download
+
+      # The upstream Dockerfile copies cmd/pd-sidecar/main.go to cmd/cmd.go.
+      mkdir -p cmd pkg
+      cp $CRAFT_PART_SRC/cmd/pd-sidecar/main.go cmd/cmd.go
+      cp -r $CRAFT_PART_SRC/pkg/sidecar pkg/sidecar
+      cp -r $CRAFT_PART_SRC/pkg/common pkg/common
+
+      # Build the routing sidecar binary with the upstream version stamps.
+      go build -a -o bin/pd-sidecar \
+        -ldflags="-X github.com/llm-d/llm-d-inference-scheduler/pkg/sidecar/version.CommitSHA=${COMMIT_SHA} -X github.com/llm-d/llm-d-inference-scheduler/pkg/sidecar/version.BuildRef=${BUILD_REF}" \
+        cmd/cmd.go
+
+      # Install the binary at the upstream runtime path (/app/pd-sidecar).
+      mkdir -p $CRAFT_PART_INSTALL/app
+      cp bin/pd-sidecar $CRAFT_PART_INSTALL/app/pd-sidecar
+      chmod +x $CRAFT_PART_INSTALL/app/pd-sidecar
