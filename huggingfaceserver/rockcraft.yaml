@@ -75,6 +75,14 @@ parts:
       - libibverbs-dev
       # Ship a system Python in the final image
       - python3.12
+      # Python + C development headers for runtime JIT compilation.
+      # vLLM's torch.compile/Triton path compiles a CPython extension
+      # (cuda_utils.cpython-312-*.so) at runtime with gcc, which needs the
+      # standard C headers (stdlib.h, via libc6-dev) and Python.h (via
+      # libpython3.12-dev). python3.12-dev pulls in both. Without them the
+      # engine crashes with "fatal error: stdlib.h: No such file or directory".
+      # Mirrors the upstream prod image, which installs python3.12-dev.
+      - python3.12-dev
     build-packages:
       - build-essential
       - wget
