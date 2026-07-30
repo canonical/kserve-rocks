@@ -4,7 +4,7 @@ summary: LeaderWorkerSet controller
 description: "LeaderWorkerSet (LWS) controller manager"
 version: "0.7.0"
 license: Apache-2.0
-base: ubuntu@22.04
+base: ubuntu@24.04
 platforms:
     amd64:
 run-user: _daemon_
@@ -22,7 +22,7 @@ parts:
     override-build: |
       mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
       (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
-      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-24.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
 
   lws:
@@ -35,20 +35,18 @@ parts:
     build-environment:
       - CGO_ENABLED: "0"
       - GOOS: linux
+      - GIT_TAG: v0.7.0 # on the original repo and branch run $(git describe --abbrev=0)
+      - GIT_COMMIT: cd3a73a3f5e00cfa9cd2c1c92f00f6189d88073e  # on the original repo and branch run $(git rev-parse HEAD)
     override-build: |
       go mod download
 
+      version_pkg = sigs.k8s.io/lws/pkg/version
+      LD_FLAGS += -X '$(version_pkg).GitVersion=$(GIT_TAG)'
+      LD_FLAGS += -X '$(version_pkg).GitCommit=$(shell git rev-parse HEAD)'
+
       # Build the manager binary, as done by `make build` in the upstream
       # Dockerfile (go build -o bin/manager cmd/main.go).
-      go build -a -o manager ./cmd
-
-      # Generate third-party licenses
-      cp -r $CRAFT_PART_SRC/LICENSE ./LICENSE
-      go install github.com/google/go-licenses@latest
-      $GOBIN/go-licenses check ./cmd/... ./pkg/... ./api/... --disallowed_types="forbidden,unknown"
-      $GOBIN/go-licenses save --save_path third_party/library ./cmd
+      go build -a -o manager -ldflags "$LD_FLAGS" ./cmd
 
       # Copy the files to the install directory
-      mkdir $CRAFT_PART_INSTALL/third_party
-      cp -r third_party $CRAFT_PART_INSTALL/third_party/
       cp -r manager $CRAFT_PART_INSTALL/manager
