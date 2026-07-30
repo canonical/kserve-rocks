@@ -40,9 +40,9 @@ parts:
     override-build: |
       go mod download
 
-      version_pkg = sigs.k8s.io/lws/pkg/version
-      LD_FLAGS += -X '$(version_pkg).GitVersion=$(GIT_TAG)'
-      LD_FLAGS += -X '$(version_pkg).GitCommit=$(shell git rev-parse HEAD)'
+      version_pkg="sigs.k8s.io/lws/pkg/version"
+      LD_FLAGS="-X '${version_pkg}.GitVersion=${GIT_TAG}'"
+      LD_FLAGS="${LD_FLAGS} -X '${version_pkg}.GitCommit=${GIT_COMMIT}'"
 
       # Build the manager binary, as done by `make build` in the upstream
       # Dockerfile (go build -o bin/manager cmd/main.go).
