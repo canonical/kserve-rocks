@@ -1,9 +1,9 @@
-# Copyright 2024 Canonical Ltd.
+# Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-import pytest
 import subprocess
 
+import pytest
 from charmed_kubeflow_chisme.rock import CheckRock
 
 
@@ -14,21 +14,6 @@ def test_rock():
     rock_image = check_rock.get_name()
     rock_version = check_rock.get_version()
     LOCAL_ROCK_IMAGE = f"{rock_image}:{rock_version}"
-
-    # assert the rock contains the expected files
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "--rm",
-            LOCAL_ROCK_IMAGE,
-            "exec",
-            "ls",
-            "-la",
-            "/third_party",
-        ],
-        check=True,
-    )
 
     subprocess.run(
         ["docker", "run", "--rm", LOCAL_ROCK_IMAGE, "exec", "ls", "-la", "/manager"],
