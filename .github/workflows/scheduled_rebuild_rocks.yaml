@@ -1,0 +1,15 @@
+name: Scheduled rebuild rocks for all refs
+
+on:
+  schedule:
+    - cron: '0 3 1 * *'   # 1st of each month, 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+
+  scheduled-rebuild-rocks:
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get-all-rock-refs-and-build-scan-test-publish.yaml@main
+    permissions:
+      contents: read
+      issues: write
+    secrets: inherit
