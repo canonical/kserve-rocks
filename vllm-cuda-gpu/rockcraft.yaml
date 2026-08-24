@@ -170,6 +170,15 @@ parts:
         "runai-model-streamer[s3,gcs,azure]"
       uv cache clean
 
+      # NIXL (https://github.com/ai-dynamo/nixl) - required for vLLM's disaggregated
+      # prefill/decode KV cache transfer connector (KVConnector "Nixl*Connector").
+      # vllm==0.19.0 requires nixl >= 0.7.1, < 0.10.0 (see requirements/kv_connectors.txt),
+      # so 0.8.0 is pinned here. The PyPI wheel bundles UCX and both the CUDA 12 and
+      # CUDA 13 transport backends, auto-selecting the right one at runtime based on
+      # the CUDA version reported by PyTorch, so no extra CUDA index URL is needed.
+      uv pip install --no-cache -v "nixl==0.8.0"
+      uv cache clean
+
       # Pin fastapi to <0.137.0 to avoid incompatibility with prometheus-fastapi-instrumentator 8.0.0.
       # fastapi>=0.137.0 introduces _IncludedRouter in app.routes, which lacks a .path attribute
       # and causes the prometheus middleware to crash with AttributeError on every request.
