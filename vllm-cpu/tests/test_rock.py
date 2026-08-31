@@ -75,6 +75,8 @@ def test_rock():
         "/opt/venv/bin/python",
         "/opt/venv/lib/python3.12/site-packages/vllm",
         "/opt/uv",
+        "/opt/pebble/vllmd.sh",
+        "/opt/pebble/log-layer.yaml",
     ]
 
     for p in paths:
@@ -91,6 +93,51 @@ def test_rock():
             ],
             check=True,
         )
+
+
+@pytest.mark.abort_on_fail
+def test_log_forwarding_assets():
+    """The Pebble log-forwarding assets are present and well-formed."""
+    check_rock = CheckRock("rockcraft.yaml")
+    local_rock_image = f"{check_rock.get_name()}:{check_rock.get_version()}"
+
+    # The wrapper script that renders the log layer is executable.
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--entrypoint",
+            "/bin/bash",
+            local_rock_image,
+            "-c",
+            "test -x /opt/pebble/vllmd.sh",
+        ],
+        check=True,
+    )
+
+    # The log-layer template declares a Loki log target.
+    result = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--entrypoint",
+            "/bin/bash",
+            local_rock_image,
+            "-c",
+            "cat /opt/pebble/log-layer.yaml",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert (
+        "log-targets:" in result.stdout
+    ), f"Expected 'log-targets:' in log-layer.yaml, got: {result.stdout!r}"
+    assert (
+        "type: loki" in result.stdout
+    ), f"Expected 'type: loki' in log-layer.yaml, got: {result.stdout!r}"
 
 
 @pytest.mark.abort_on_fail

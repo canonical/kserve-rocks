@@ -1,0 +1,20 @@
+# Pebble log-forwarding layer template for vLLM (GPU/CUDA edition).
+#
+# Rendered at container start by /opt/pebble/vllmd.sh, which substitutes the
+# Loki URL and hostname placeholders below and then runs `pebble add logging`.
+# Forwarding is only enabled when the LOKI_URL environment variable is set.
+#
+# References:
+#   https://ubuntu.com/docs/pebble/how-to/forward-logs-to-loki/
+#   https://ubuntu.com/docs/pebble/reference/log-forwarding/
+log-targets:
+  loki:
+    override: replace
+    type: loki
+    location: $LOKI_URL
+    services: [all]
+    labels:
+      app: vllm
+      edition: gpu
+      version: "0.19.0"
+      pod: $HOSTNAME
