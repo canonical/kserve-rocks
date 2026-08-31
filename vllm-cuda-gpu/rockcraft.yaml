@@ -39,7 +39,9 @@ services:
     startup: enabled
     # Pass the model (and any other flags) after the image name, e.g.:
     #   docker run --gpus all vllm-cuda-gpu:0.19.0 --model facebook/opt-125m
-    command: "/opt/venv/bin/vllm serve [ --model dummy-model ]"      
+    # vllmd.sh optionally enables Pebble log forwarding (when LOKI_URL is set)
+    # and then execs `vllm serve` with the args passed after the image name.
+    command: "/bin/bash /opt/pebble/vllmd.sh [ --model dummy-model ]"      
 
 entrypoint-service: vllm
 
@@ -51,6 +53,18 @@ parts:
       (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
       dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  log-forwarding:
+    # Pebble log-forwarding assets: a log-targets layer template and the
+    # service wrapper (vllmd.sh) that renders it and runs `pebble add logging`
+    # when LOKI_URL is set. Source files live in ./pebble/.
+    plugin: nil
+    override-build: |
+      set -eux
+      mkdir -p ${CRAFT_PART_INSTALL}/opt/pebble
+      cp ${CRAFT_PROJECT_DIR}/pebble/log-layer.yaml ${CRAFT_PART_INSTALL}/opt/pebble/log-layer.yaml
+      cp ${CRAFT_PROJECT_DIR}/pebble/vllmd.sh ${CRAFT_PART_INSTALL}/opt/pebble/vllmd.sh
+      chmod +x ${CRAFT_PART_INSTALL}/opt/pebble/vllmd.sh
 
   vllm:
     plugin: nil
