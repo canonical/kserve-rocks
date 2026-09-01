@@ -1,0 +1,143 @@
+# Prebuilt Triton Inference Server, extracted from the official NGC image:
+# https://catalog.ngc.nvidia.com/orgs/nvidia/containers/tritonserver (23.05-py3)
+#
+# Instead of compiling Triton from source, this rock consumes NVIDIA's already
+# built server directly: skopeo pulls the public image into an OCI layout (no
+# Docker daemon required), we flatten its layers and copy the prebuilt
+# /opt/tritonserver tree plus the CUDA 12.1 runtime and the
+# cuDNN/TensorRT/cuTENSOR/NCCL libraries it links.
+#
+# The image ships every backend already compiled, so this rock includes them
+# all for free: tensorrt, python, tensorflow, onnxruntime, openvino, pytorch,
+# dali and fil (plus the identity/repeat/square example backends).
+#
+# NOTE: a from-source build of this rock is preserved in rockcraft.yaml.backup.
+
+name: tritonserver
+summary: NVIDIA Triton Inference Server
+description: |
+  Triton Inference Server is an open source inference serving software that
+  streamlines AI inferencing. Triton enables teams to deploy any AI model from
+  multiple deep learning and machine learning frameworks. This rock repackages
+  NVIDIA's prebuilt Triton 2.34.0 (NGC nvcr.io/nvidia/tritonserver:23.05-py3),
+  including the Triton core/server plus the tensorrt, python, tensorflow,
+  onnxruntime, openvino, pytorch, dali and fil backends.
+version: "2.34.0"
+license: BSD-3-Clause
+base: ubuntu@22.04
+run-user: _daemon_
+
+# Top-level env is written to OCI config.Env (used by NVIDIA runtime hooks).
+# Keep paths fully expanded: rockcraft forbids '$' interpolation here.
+environment:
+  NVIDIA_VISIBLE_DEVICES: "all"
+  NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+  PATH: "/opt/tritonserver/bin:/usr/local/nvidia/bin:/usr/local/cuda-12.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  # The ONNX Runtime backend ships its provider libs in its own dir (first, as
+  # in the NGC image); cuDNN/TensorRT/cuTENSOR/NCCL live in the system lib dir.
+  LD_LIBRARY_PATH: "/opt/tritonserver/backends/onnxruntime:/opt/tritonserver/lib:/usr/local/cuda-12.1/lib64:/usr/lib/x86_64-linux-gnu:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+
+platforms:
+  amd64:
+
+services:
+  tritonserver:
+    override: replace
+    summary: "Triton Inference Server"
+    startup: enabled
+    # Wrapped in bash so ${MODEL_REPOSITORY} is expanded; Pebble runs the
+    # command via exec (no shell) and does not interpolate env vars itself.
+    # Trailing [ ] is the required default-args section for entrypoint-service.
+    command: bash -c 'exec tritonserver --model-repository=${MODEL_REPOSITORY}' [ ]
+    environment:
+      MODEL_REPOSITORY: "/models"
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+      CUDA_VERSION: "12.1.1"
+      PATH: "/opt/tritonserver/bin:/usr/local/nvidia/bin:/usr/local/cuda-12.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+      # Host-mounted driver paths only; the rock ships the CUDA runtime.
+      LD_LIBRARY_PATH: "/opt/tritonserver/backends/onnxruntime:/opt/tritonserver/lib:/usr/local/cuda-12.1/lib64:/usr/lib/x86_64-linux-gnu:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+entrypoint-service: tritonserver
+
+parts:
+  security-team-requirement:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/rocks
+      (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
+      dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
+      > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  tritonserver:
+    plugin: nil
+    build-packages:
+      - skopeo
+      - jq
+    build-environment:
+      # Official prebuilt Triton image (Triton 2.34.0, CUDA 12.1, TensorRT 8.6).
+      - TRITON_NGC_IMAGE: "docker://nvcr.io/nvidia/tritonserver:23.05-py3"
+    override-build: |
+      set -eux -o pipefail
+
+      # --- Pull the prebuilt Triton image into an OCI layout (no Docker daemon) ---
+      workdir=$(mktemp -d)
+      skopeo copy --override-os linux "${TRITON_NGC_IMAGE}" "oci:${workdir}/oci:latest"
+      mkdir -p ${workdir}/rootfs
+      idx=$(jq -r '.manifests[0].digest' ${workdir}/oci/index.json | cut -d: -f2)
+      for layer in $(jq -r '.layers[].digest' ${workdir}/oci/blobs/sha256/${idx} | cut -d: -f2); do
+        tar -xf ${workdir}/oci/blobs/sha256/${layer} -C ${workdir}/rootfs || true
+      done
+      root=${workdir}/rootfs
+
+      # --- Prebuilt Triton server + every backend (already compiled) ---
+      mkdir -p ${CRAFT_PART_INSTALL}/opt
+      cp -a ${root}/opt/tritonserver ${CRAFT_PART_INSTALL}/opt/
+
+      # --- CUDA 12.1 runtime tree (cudart/cublas/cufft/... live in its lib64) ---
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/local
+      cp -a ${root}/usr/local/cuda-12.1 ${CRAFT_PART_INSTALL}/usr/local/
+      ln -sf /usr/local/cuda-12.1 ${CRAFT_PART_INSTALL}/usr/local/cuda
+      ln -sf /usr/local/cuda-12.1 ${CRAFT_PART_INSTALL}/usr/local/cuda-12
+
+      # --- cuDNN / TensorRT / cuTENSOR / NCCL / DCGM live outside the CUDA tree ---
+      # (libdcgm is the NVIDIA Data Center GPU Manager lib the server links for metrics.)
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/lib/x86_64-linux-gnu
+      for pat in libcudnn libnvinfer libnvonnxparser libnvparsers libcutensor libnccl libdcgm; do
+        cp -a ${root}/usr/lib/x86_64-linux-gnu/${pat}*.so* \
+          ${CRAFT_PART_INSTALL}/usr/lib/x86_64-linux-gnu/ || true
+      done
+      # cuTENSOR also ships per-CUDA-version subdirs under a libcutensor/ tree.
+      cp -a ${root}/usr/lib/x86_64-linux-gnu/libcutensor \
+        ${CRAFT_PART_INSTALL}/usr/lib/x86_64-linux-gnu/ 2>/dev/null || true
+
+      # --- Mount targets for NVIDIA runtime-injected driver libs/tools ---
+      # (The container runtime bind-mounts the host driver here; do NOT ship the
+      # CUDA compat libcuda or add it to LD_LIBRARY_PATH, or it would shadow the
+      # host driver and cause version mismatches.)
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/local/nvidia/bin
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/local/nvidia/lib
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/local/nvidia/lib64
+
+      rm -rf ${workdir}
+
+  runtime-libraries:
+    plugin: nil
+    after: [tritonserver]
+    # Ubuntu runtime shared libraries the server/backends dynamically link.
+    # CUDA/cuDNN/TensorRT libs are copied from the NGC image in the part above.
+    stage-packages:
+      - libb64-0d
+      - libre2-9
+      - libnuma1
+      - libarchive13
+      - libgoogle-perftools4
+      - libcurl4
+      - libtbb2
+      - libgomp1
+      - libssl3
+      - zlib1g
+      - libstdc++6
+      - libgcc-s1
+      - python3
+      - libpython3.10
+      - python3-pip
