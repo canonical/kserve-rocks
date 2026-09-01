@@ -20,7 +20,7 @@ description: |
   NVIDIA's prebuilt Triton 2.34.0 (NGC nvcr.io/nvidia/tritonserver:23.05-py3),
   including the Triton core/server plus the tensorrt, python, tensorflow,
   onnxruntime, openvino, pytorch, dali and fil backends.
-version: "2.34.0"
+version: "23.05"
 license: BSD-3-Clause
 base: ubuntu@22.04
 run-user: _daemon_
