@@ -10,8 +10,6 @@
 # The image ships every backend already compiled, so this rock includes them
 # all for free: tensorrt, python, tensorflow, onnxruntime, openvino, pytorch,
 # dali and fil (plus the identity/repeat/square example backends).
-#
-# NOTE: a from-source build of this rock is preserved in rockcraft.yaml.backup.
 
 name: tritonserver
 summary: NVIDIA Triton Inference Server
