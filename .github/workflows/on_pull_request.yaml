@@ -6,7 +6,7 @@ on:
 jobs:
 
   on-pull-request:
-    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get-rocks-modified-and-build-scan-test-publish.yaml@main
+    uses: canonical/charmed-kubeflow-workflows/.github/workflows/get-rocks-modified-and-build-scan-test-publish.yaml@kf-8939-upload-ghcr
     permissions:
       pull-requests: read
     secrets: inherit
