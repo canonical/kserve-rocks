@@ -4,3 +4,4 @@ integrations:
     replace-image:
       - file: charms/kserve-controller/src/default-custom-images.json
         path: serving_runtimes__huggingfaceserver__multinode
+registry: ghcr.io/canonical
