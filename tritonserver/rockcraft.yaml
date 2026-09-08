@@ -43,12 +43,12 @@ services:
     override: replace
     summary: "Triton Inference Server"
     startup: enabled
-    # Wrapped in bash so ${MODEL_REPOSITORY} is expanded; Pebble runs the
-    # command via exec (no shell) and does not interpolate env vars itself.
-    # Trailing [ ] is the required default-args section for entrypoint-service.
-    command: bash -c 'exec tritonserver --model-repository=${MODEL_REPOSITORY}' [ ]
+    # KServe's ServingRuntime passes the full `tritonserver ...` invocation as
+    # container args (incl. --model-store=/mnt/models and the 8080/9000 ports),
+    # so `exec "$@"` runs them verbatim. The args in [ ] are the standalone
+    # default (also the required default-args section for entrypoint-service).
+    command: bash -c 'exec "$@"' -- [ tritonserver --model-repository=/mnt/models ]
     environment:
-      MODEL_REPOSITORY: "/models"
       NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
       CUDA_VERSION: "12.1.1"
@@ -70,22 +70,26 @@ parts:
     plugin: nil
     build-packages:
       - skopeo
-      - jq
+      - curl
     build-environment:
       # Official prebuilt Triton image (Triton 2.34.0, CUDA 12.1, TensorRT 8.6).
       - TRITON_NGC_IMAGE: "docker://nvcr.io/nvidia/tritonserver:23.05-py3"
+      - UMOCI_VERSION: "0.4.7"
     override-build: |
       set -eux -o pipefail
 
       # --- Pull the prebuilt Triton image into an OCI layout (no Docker daemon) ---
       workdir=$(mktemp -d)
       skopeo copy --override-os linux "${TRITON_NGC_IMAGE}" "oci:${workdir}/oci:latest"
-      mkdir -p ${workdir}/rootfs
-      idx=$(jq -r '.manifests[0].digest' ${workdir}/oci/index.json | cut -d: -f2)
-      for layer in $(jq -r '.layers[].digest' ${workdir}/oci/blobs/sha256/${idx} | cut -d: -f2); do
-        tar -xf ${workdir}/oci/blobs/sha256/${layer} -C ${workdir}/rootfs || true
-      done
-      root=${workdir}/rootfs
+
+      # --- Flatten the image into a single rootfs with an OCI-aware unpacker ---
+      # (umoci applies layer whiteouts, so files removed by later layers are
+      # deleted and .wh.* markers are not left behind.)
+      curl -fsSL -o ${workdir}/umoci \
+        "https://github.com/opencontainers/umoci/releases/download/v${UMOCI_VERSION}/umoci.amd64"
+      chmod +x ${workdir}/umoci
+      ${workdir}/umoci unpack --rootless --image "${workdir}/oci:latest" "${workdir}/bundle"
+      root=${workdir}/bundle/rootfs
 
       # --- Prebuilt Triton server + every backend (already compiled) ---
       mkdir -p ${CRAFT_PART_INSTALL}/opt

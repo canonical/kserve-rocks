@@ -24,7 +24,7 @@ def test_rock():
             "/bin/bash",
             LOCAL_ROCK_IMAGE,
             "-c",
-            "ls -la /opt/tritonserver/bin/tritonserver",
+            "test -x /opt/tritonserver/bin/tritonserver",
         ],
         check=True,
     )
