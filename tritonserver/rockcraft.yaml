@@ -32,8 +32,9 @@ environment:
   NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
   PATH: "/opt/tritonserver/bin:/usr/local/nvidia/bin:/usr/local/cuda-12.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   # The ONNX Runtime backend ships its provider libs in its own dir (first, as
-  # in the NGC image); cuDNN/TensorRT/cuTENSOR/NCCL live in the system lib dir.
-  LD_LIBRARY_PATH: "/opt/tritonserver/backends/onnxruntime:/opt/tritonserver/lib:/usr/local/cuda-12.1/lib64:/usr/lib/x86_64-linux-gnu:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+  # in the NGC image); cuDNN/TensorRT/cuTENSOR/NCCL live in the system lib dir,
+  # and the PyTorch backend links OpenMPI/UCX under /opt/hpcx.
+  LD_LIBRARY_PATH: "/opt/tritonserver/backends/onnxruntime:/opt/tritonserver/lib:/usr/local/cuda-12.1/lib64:/usr/lib/x86_64-linux-gnu:/opt/hpcx/ompi/lib:/opt/hpcx/ucx/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
 
 platforms:
   amd64:
@@ -54,7 +55,7 @@ services:
       CUDA_VERSION: "12.1.1"
       PATH: "/opt/tritonserver/bin:/usr/local/nvidia/bin:/usr/local/cuda-12.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       # Host-mounted driver paths only; the rock ships the CUDA runtime.
-      LD_LIBRARY_PATH: "/opt/tritonserver/backends/onnxruntime:/opt/tritonserver/lib:/usr/local/cuda-12.1/lib64:/usr/lib/x86_64-linux-gnu:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+      LD_LIBRARY_PATH: "/opt/tritonserver/backends/onnxruntime:/opt/tritonserver/lib:/usr/local/cuda-12.1/lib64:/usr/lib/x86_64-linux-gnu:/opt/hpcx/ompi/lib:/opt/hpcx/ucx/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
 entrypoint-service: tritonserver
 
 parts:
@@ -111,6 +112,14 @@ parts:
       # cuTENSOR also ships per-CUDA-version subdirs under a libcutensor/ tree.
       cp -a ${root}/usr/lib/x86_64-linux-gnu/libcutensor \
         ${CRAFT_PART_INSTALL}/usr/lib/x86_64-linux-gnu/ 2>/dev/null || true
+
+      # --- OpenMPI + UCX (HPC-X): the PyTorch backend's libtorch links libmpi.so.40. ---
+      # In the NGC image /usr/local/{mpi,ucx} symlink into /opt/hpcx; recreate them.
+      mkdir -p ${CRAFT_PART_INSTALL}/opt/hpcx
+      cp -a ${root}/opt/hpcx/ompi ${CRAFT_PART_INSTALL}/opt/hpcx/
+      cp -a ${root}/opt/hpcx/ucx ${CRAFT_PART_INSTALL}/opt/hpcx/
+      ln -sf /opt/hpcx/ompi ${CRAFT_PART_INSTALL}/usr/local/mpi
+      ln -sf /opt/hpcx/ucx ${CRAFT_PART_INSTALL}/usr/local/ucx
 
       # --- Mount targets for NVIDIA runtime-injected driver libs/tools ---
       # (The container runtime bind-mounts the host driver here; do NOT ship the
