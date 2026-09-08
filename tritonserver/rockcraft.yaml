@@ -152,3 +152,11 @@ parts:
       - python3
       - libpython3.10
       - python3-pip
+
+  # KServe's tritonserver ServingRuntime runs the pod as UID 1000; create a
+  # matching named user so getpwuid(1000) resolves and has a writable home.
+  non-root-user:
+    plugin: nil
+    after: [runtime-libraries]
+    overlay-script: |
+      useradd -R $CRAFT_OVERLAY -m -s /bin/bash -N -u 1000 -G users triton-server
