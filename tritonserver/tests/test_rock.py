@@ -15,59 +15,31 @@ def test_rock():
     rock_version = check_rock.get_version()
     LOCAL_ROCK_IMAGE = f"{rock_image}:{rock_version}"
 
-    # assert the server executable and shared library are present
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "--entrypoint",
-            "/bin/bash",
-            LOCAL_ROCK_IMAGE,
-            "-c",
-            "test -x /opt/tritonserver/bin/tritonserver",
-        ],
-        check=True,
-    )
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "--entrypoint",
-            "/bin/bash",
-            LOCAL_ROCK_IMAGE,
-            "-c",
-            "ls -la /opt/tritonserver/lib/libtritonserver.so",
-        ],
-        check=True,
-    )
-    # assert the built backends are present
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "--entrypoint",
-            "/bin/bash",
-            LOCAL_ROCK_IMAGE,
-            "-c",
-            "ls -la /opt/tritonserver/backends/python "
-            "/opt/tritonserver/backends/tensorrt "
-            "/opt/tritonserver/backends/tensorflow "
-            "/opt/tritonserver/backends/openvino "
-            "/opt/tritonserver/backends/onnxruntime "
-            "/opt/tritonserver/backends/pytorch",
-        ],
-        check=True,
-    )
-    # assert the checksum repository agent is present
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "--entrypoint",
-            "/bin/bash",
-            LOCAL_ROCK_IMAGE,
-            "-c",
-            "ls -la /opt/tritonserver/repoagents/checksum",
-        ],
-        check=True,
-    )
+    checks = [
+        # assert the server executable and shared library are present
+        "test -x /opt/tritonserver/bin/tritonserver",
+        "ls -la /opt/tritonserver/lib/libtritonserver.so",
+        # assert the built backends are present
+        "ls -la /opt/tritonserver/backends/python "
+        "/opt/tritonserver/backends/tensorrt "
+        "/opt/tritonserver/backends/tensorflow "
+        "/opt/tritonserver/backends/openvino "
+        "/opt/tritonserver/backends/onnxruntime "
+        "/opt/tritonserver/backends/pytorch",
+        # assert the checksum repository agent is present
+        "ls -la /opt/tritonserver/repoagents/checksum",
+    ]
+
+    for check in checks:
+        subprocess.run(
+            [
+                "docker",
+                "run",
+                "--entrypoint",
+                "/bin/bash",
+                LOCAL_ROCK_IMAGE,
+                "-c",
+                check,
+            ],
+            check=True,
+        )
