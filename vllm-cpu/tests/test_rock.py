@@ -1,10 +1,3 @@
-# Copyright 2026 Canonical Ltd.
-# See LICENSE file for licensing details.
-
-import http.server
-import logging
-import shlex
-import socket
 import subprocess
 import threading
 import time
@@ -312,6 +305,33 @@ def fake_loki():
         logger.info("Fake Loki server stopped")
 
 
+def _wait_for_forwarded_logs(snapshot, container_id) -> bytes:
+    """Wait until vLLM logs reach the fake Loki endpoint and return them.
+
+    Raises an ``AssertionError`` including the container logs if nothing is
+    forwarded within ``_LOG_FORWARDING_TIMEOUT_SECONDS``.
+    """
+    deadline = time.monotonic() + _LOG_FORWARDING_TIMEOUT_SECONDS
+    while time.monotonic() < deadline:
+        combined = snapshot()
+        if b"pebble_service" in combined and b"vllm" in combined:
+            logger.info("Received forwarded vLLM logs at the fake Loki endpoint")
+            return combined
+        time.sleep(5)
+
+    container_logs = subprocess.run(
+        ["docker", "logs", container_id],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    raise AssertionError(
+        "No vLLM logs were forwarded to Loki within "
+        f"{_LOG_FORWARDING_TIMEOUT_SECONDS}s.\n"
+        f"--- container logs ---\n{container_logs.stdout}\n{container_logs.stderr}"
+    )
+
+
 @pytest.mark.abort_on_fail
 def test_log_forwarding_to_loki(fake_loki):
     """vLLM service logs are forwarded to Loki when LOKI_URL is set.
@@ -352,26 +372,7 @@ def test_log_forwarding_to_loki(fake_loki):
     logger.info(f"Started container {container_id}")
 
     try:
-        deadline = time.monotonic() + _LOG_FORWARDING_TIMEOUT_SECONDS
-        combined = b""
-        while time.monotonic() < deadline:
-            combined = snapshot()
-            if b"pebble_service" in combined and b"vllm" in combined:
-                logger.info("Received forwarded vLLM logs at the fake Loki endpoint")
-                break
-            time.sleep(5)
-        else:
-            container_logs = subprocess.run(
-                ["docker", "logs", container_id],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            raise AssertionError(
-                "No vLLM logs were forwarded to Loki within "
-                f"{_LOG_FORWARDING_TIMEOUT_SECONDS}s.\n"
-                f"--- container logs ---\n{container_logs.stdout}\n{container_logs.stderr}"
-            )
+        combined = _wait_for_forwarded_logs(snapshot, container_id)
 
         assert (
             b"pebble_service" in combined
@@ -381,6 +382,98 @@ def test_log_forwarding_to_loki(fake_loki):
         ), "Expected the vLLM service name in the forwarded logs"
         logger.info("Forwarded logs:\n%s", combined)
         logger.info("Log forwarding to Loki test completed successfully")
+    finally:
+        subprocess.run(["docker", "stop", container_id], check=False)
+        subprocess.run(["docker", "rm", container_id], check=False)
+
+
+@pytest.mark.abort_on_fail
+def test_log_forwarding_with_overridden_entrypoint(fake_loki):
+    """Logs are forwarded even when the rock's entrypoint is overridden.
+
+    KServe does not use the rock's `pebble enter` entrypoint: it sets an
+    explicit `command: [vllm, serve, /mnt/models, ...]` on the container, which
+    replaces it. vLLM then runs as PID 1 with no Pebble daemon, so the wrapper
+    has to start one itself before logs can be forwarded. Without that
+    bootstrap, `pebble add` fails with "cannot communicate with server ...
+    .pebble.socket not found" and no logs ever reach Loki.
+
+    This reproduces that invocation with `--entrypoint vllm` and asserts the
+    logs still arrive, labelled the way the charm's Loki queries expect.
+    """
+    snapshot, loki_port = fake_loki
+    check_rock = CheckRock("rockcraft.yaml")
+    local_rock_image = f"{check_rock.get_name()}:{check_rock.get_version()}"
+
+    loki_url = f"http://host.docker.internal:{loki_port}/loki/api/v1/push"
+    logger.info(
+        f"Starting vLLM container with an overridden entrypoint and LOKI_URL={loki_url}"
+    )
+
+    result = subprocess.run(
+        [
+            "docker",
+            "run",
+            "-d",
+            "--add-host",
+            "host.docker.internal:host-gateway",
+            "-e",
+            f"HF_HOME={_HF_HOME_CONTAINER}",
+            "-e",
+            f"LOKI_URL={loki_url}",
+            # Replaces the rock entrypoint, exactly as KServe's `command:` does.
+            "--entrypoint",
+            "vllm",
+            local_rock_image,
+            "serve",
+            "--model",
+            _MODEL,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    container_id = result.stdout.strip()
+    logger.info(f"Started container {container_id}")
+
+    try:
+        combined = _wait_for_forwarded_logs(snapshot, container_id)
+
+        # The charm queries Loki with `{app=~"vllm"}`, so the label set from
+        # log-layer.yaml must survive the bootstrap.
+        assert (
+            b'"app":"vllm"' in combined
+        ), f'Expected an app="vllm" label in the forwarded logs, got: {combined!r}'
+        assert (
+            b"pebble_service" in combined
+        ), "Expected the default 'pebble_service' label in the forwarded logs"
+
+        container_logs = subprocess.run(
+            ["docker", "logs", container_id],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        stdout_and_stderr = container_logs.stdout + container_logs.stderr
+
+        # The wrapper must have taken the bootstrap path rather than silently
+        # skipping log forwarding.
+        assert "starting Pebble to supervise vLLM" in stdout_and_stderr, (
+            "Expected the wrapper to bootstrap Pebble when the entrypoint is "
+            f"overridden, got: {stdout_and_stderr!r}"
+        )
+        assert (
+            "cannot communicate with server" not in stdout_and_stderr
+        ), f"Pebble socket was unavailable while adding the log layer: {stdout_and_stderr!r}"
+
+        # 'serve' is fixed in the Pebble service command, so a leading 'serve'
+        # from the caller must be dropped instead of passed through twice.
+        assert (
+            "vllm serve serve" not in stdout_and_stderr
+        ), f"'serve' was passed to vLLM twice: {stdout_and_stderr!r}"
+
+        logger.info("Forwarded logs:\n%s", combined)
+        logger.info("Log forwarding with an overridden entrypoint works")
     finally:
         subprocess.run(["docker", "stop", container_id], check=False)
         subprocess.run(["docker", "rm", container_id], check=False)
