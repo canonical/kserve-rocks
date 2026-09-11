@@ -23,6 +23,7 @@ def test_rock():
     # Paths that must exist inside the rock.
     paths = [
         "/opt/venv/bin/vllm",
+        "/opt/venv/bin/vllm-original",
         "/opt/venv/bin/python",
         "/opt/venv/lib/python3.12/site-packages/vllm",
         "/opt/uv",
@@ -47,6 +48,38 @@ def test_rock():
             check=True,
         )
     logger.info("All expected paths exist in the rock.")
+
+
+@pytest.mark.abort_on_fail
+def test_vllm_wrapper_symlink():
+    """`/opt/venv/bin/vllm` is a wrapper that routes through the Pebble service script.
+
+    The command is a symlink to /opt/pebble/vllmd.sh, which forwards logs (when
+    LOKI_URL is set) and then execs the real binary /opt/venv/bin/vllm-original.
+    This keeps `vllm serve ...` (the upstream image entrypoint and KServe
+    manifests) working against the rock.
+    """
+    check_rock = CheckRock("rockcraft.yaml")
+    local_rock_image = f"{check_rock.get_name()}:{check_rock.get_version()}"
+
+    result = subprocess.run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--entrypoint",
+            "/bin/bash",
+            local_rock_image,
+            "-c",
+            "readlink /opt/venv/bin/vllm",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert (
+        result.stdout.strip() == "/opt/pebble/vllmd.sh"
+    ), f"Expected /opt/venv/bin/vllm to symlink to /opt/pebble/vllmd.sh, got: {result.stdout!r}"
 
 
 @pytest.mark.abort_on_fail
