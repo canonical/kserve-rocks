@@ -34,6 +34,25 @@ curl -H "content-type: application/json" \
   -d '{"model": "facebook/opt-125m", "prompt": "The capital of France is", "max_tokens": 20}'
 ```
 
+### Log forwarding
+
+The rock can forward the vLLM server logs to a [Grafana Loki](https://grafana.com/oss/loki/)
+instance using [Pebble log forwarding](https://ubuntu.com/docs/pebble/how-to/forward-logs-to-loki/).
+Forwarding is opt-in: set the `LOKI_URL` environment variable to the Loki push
+endpoint and the container adds a Pebble `log-targets` layer at startup. When
+`LOKI_URL` is unset, forwarding is disabled and the server starts normally.
+
+```bash
+docker run --gpus all -p 8000:8000 \
+  -e HF_HOME=/tmp/huggingface \
+  -e LOKI_URL=http://my-loki:3100/loki/api/v1/push \
+  vllm-cuda-gpu:0.19.0 \
+  --model facebook/opt-125m
+```
+
+Forwarded logs carry Pebble's default `pebble_service` label plus `app=vllm`,
+`edition=gpu`, `version=0.19.0`, and `pod=$HOSTNAME`.
+
 ### Building
 
 > **Note:** Building this rock downloads multi-gigabyte CUDA wheels (PyTorch,
