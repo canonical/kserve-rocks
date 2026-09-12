@@ -1,3 +1,7 @@
+import http.server
+import logging
+import shlex
+import socket
 import subprocess
 import threading
 import time
