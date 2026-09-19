@@ -29,6 +29,10 @@ services:
     startup: enabled
     # Pass the model (and any other flags) after the image name, e.g.:
     #   docker run vllm-cpu:0.19.0 --model facebook/opt-125m
+    # /opt/venv/bin/vllm is a wrapper (symlink -> /opt/pebble/vllmd.sh) that
+    # optionally enables Pebble log forwarding (when LOKI_URL is set) and then
+    # execs the real vllm binary (vllm-original). `serve` is fixed here; the
+    # bracketed args are the overridable defaults.
     command: "/opt/venv/bin/vllm serve [ --model dummy-model ]"
     
 
@@ -42,6 +46,18 @@ parts:
       (echo "# os-release" && cat /etc/os-release && echo "# dpkg-query" && \
       dpkg-query --root=${CRAFT_PROJECT_DIR}/../bundles/ubuntu-22.04/rootfs/ -f '${db:Status-Abbrev},${binary:Package},${Version},${source:Package},${Source:Version}\n' -W) \
       > ${CRAFT_PART_INSTALL}/usr/share/rocks/dpkg.query
+
+  log-forwarding:
+    # Pebble log-forwarding assets: a log-targets layer template and the
+    # service wrapper (vllmd.sh) that renders it and runs `pebble add logging`
+    # when LOKI_URL is set. Source files live in ./pebble/.
+    plugin: nil
+    override-build: |
+      set -eux
+      mkdir -p ${CRAFT_PART_INSTALL}/opt/pebble
+      cp ${CRAFT_PROJECT_DIR}/pebble/log-layer.yaml ${CRAFT_PART_INSTALL}/opt/pebble/log-layer.yaml
+      cp ${CRAFT_PROJECT_DIR}/pebble/vllmd.sh ${CRAFT_PART_INSTALL}/opt/pebble/vllmd.sh
+      chmod +x ${CRAFT_PART_INSTALL}/opt/pebble/vllmd.sh
 
   vllm:
     plugin: nil
@@ -139,5 +155,12 @@ parts:
       cp -ar /opt/uv  "${CRAFT_PART_INSTALL}/opt/uv"
       cp -ar /opt/venv "${CRAFT_PART_INSTALL}/opt/venv"
 
-      # Ensure the vllm binary is executable
-      chmod +x "${CRAFT_PART_INSTALL}/opt/venv/bin/vllm"
+      # Mock the vllm executable so `vllm serve ...` (the upstream image
+      # entrypoint and KServe manifests) routes through the Pebble service
+      # wrapper before the real binary. Preserve the real binary as
+      # vllm-original and replace /opt/venv/bin/vllm with a symlink to
+      # /opt/pebble/vllmd.sh (provided by the log-forwarding part). Because
+      # /opt/venv/bin is first on PATH, every `vllm` call hits the wrapper.
+      mv "${CRAFT_PART_INSTALL}/opt/venv/bin/vllm" "${CRAFT_PART_INSTALL}/opt/venv/bin/vllm-original"
+      chmod +x "${CRAFT_PART_INSTALL}/opt/venv/bin/vllm-original"
+      ln -sf /opt/pebble/vllmd.sh "${CRAFT_PART_INSTALL}/opt/venv/bin/vllm"
