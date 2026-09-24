@@ -1,3 +1,6 @@
+ # Copyright 2026 Canonical Ltd.
+ # See LICENSE file for licensing details.
+
 import http.server
 import logging
 import shlex
@@ -318,6 +321,7 @@ def _wait_for_forwarded_logs(snapshot, container_id) -> bytes:
     deadline = time.monotonic() + _LOG_FORWARDING_TIMEOUT_SECONDS
     while time.monotonic() < deadline:
         combined = snapshot()
+        logger.info(f"Current combined logs: {combined}")
         if b"pebble_service" in combined and b"vllm" in combined:
             logger.info("Received forwarded vLLM logs at the fake Loki endpoint")
             return combined

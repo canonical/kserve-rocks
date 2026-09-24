@@ -70,6 +70,7 @@ parts:
 
   vllm:
     plugin: nil
+    after: [log-forwarding]
     overlay-packages:
       # Runtime libraries commonly required by vLLM / PyTorch / CV stacks.
       - ca-certificates

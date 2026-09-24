@@ -32,9 +32,7 @@
 PEBBLE_DIR="${PEBBLE:-/var/lib/pebble/default}"
 PEBBLE_SOCKET="${PEBBLE_DIR}/.pebble.socket"
 LOG_LAYER_FILE="/opt/pebble/log-layer.yaml"
-# The layer is rendered under /tmp rather than into ${PEBBLE_DIR}/layers because
-# the rock runs as a non-root user that cannot write to the Pebble directory.
-RENDERED_LOG_LAYER="/tmp/rendered_log_layer.yaml"
+RENDERED_LOG_LAYER="${PEBBLE_DIR}/rendered_log_layer.yaml"
 REAL_VLLM="/opt/venv/bin/vllm-original"
 
 # Render the log-layer template, substituting the Loki URL and hostname.

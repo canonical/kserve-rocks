@@ -61,6 +61,7 @@ parts:
 
   vllm:
     plugin: nil
+    after: [log-forwarding]
     source: https://github.com/vllm-project/vllm.git
     source-tag: v0.19.0
 
