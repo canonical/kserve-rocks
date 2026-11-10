@@ -1,6 +1,6 @@
 # Based on https://github.com/kserve/kserve/blob/v0.17.0/python/sklearn.Dockerfile
-# 
-# See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
+#
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
 # This rock is implemented with some atypical patterns due to the nature of the upstream
 # Dockerfile.
 name: sklearnserver
@@ -64,13 +64,18 @@ parts:
       cd python/kserve && uv sync --active --no-cache && cd ../..
       cd python/kserve && uv pip install . --no-cache && cd ../..
 
-      # Install storage  
+      # Install storage
       cd python/storage && uv sync --active --no-cache && cd ../..
       cd python/storage && uv pip install . --no-cache && cd ../..
-      
+
       # Install sklearnserver - use uv sync for dependencies, then pip install for the package
       cd python/sklearnserver && uv sync --active --no-cache && cd ../..
       cd python/sklearnserver && uv pip install . --no-cache && cd ../..
+
+      # Override transitive dependencies pinned in upstream uv.lock files to fix CVEs
+      # (CVE-2026-63374 anyio, CVE-2026-21226 azure-core, CVE-2026-102267/102268 PyJWT).
+      # Remove once upstream bumps these.
+      uv pip install --no-cache "anyio>=4.14.2" "azure-core>=1.38.0" "pyjwt>=2.14.0"
 
       # Promote the packages we've installed from the virtual env to the primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
