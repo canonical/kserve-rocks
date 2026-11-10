@@ -1,7 +1,14 @@
+<<<<<<< HEAD
 # Based on https://github.com/kserve/kserve/blob/v0.15.2/python/sklearn.Dockerfile
 # 
 # See ../CONTRIBUTING.md for more details about the patterns used in this rock. 
 # This rock is implemented with some atypical patterns due to the native of the upstream
+=======
+# Based on https://github.com/kserve/kserve/blob/v0.17.0/python/sklearn.Dockerfile
+#
+# See ../CONTRIBUTING.md for more details about the patterns used in this rock.
+# This rock is implemented with some atypical patterns due to the nature of the upstream
+>>>>>>> f21ce1c (fix: Pin dependencies in sklearnserver to fix vulnerabilities (#357))
 # Dockerfile.
 name: sklearnserver
 summary: sklearn server for Kserve deployments
@@ -46,6 +53,7 @@ parts:
       # Use Python 3.11
       update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
       update-alternatives --set python3 /usr/bin/python3.11
+<<<<<<< HEAD
       
       # Setup poetry
       pip install poetry==1.8.3
@@ -57,6 +65,38 @@ parts:
       (cd python_env_builddir && poetry install --no-interaction --no-root)
 
       # Promote the packages we've installed from the local env to the primed image
+=======
+
+      # Install uv
+      curl -LsSf https://astral.sh/uv/install.sh | sh
+      export PATH="/root/.local/bin:$PATH"
+
+      # Setup virtual environment
+      uv venv ./python_venv
+      export VIRTUAL_ENV=$PWD/python_venv
+      export PATH="$VIRTUAL_ENV/bin:$PATH"
+
+      # Install the kserve, storage, and sklearnserver packages with their dependencies using uv
+
+      # Install kserve
+      cd python/kserve && uv sync --active --no-cache && cd ../..
+      cd python/kserve && uv pip install . --no-cache && cd ../..
+
+      # Install storage
+      cd python/storage && uv sync --active --no-cache && cd ../..
+      cd python/storage && uv pip install . --no-cache && cd ../..
+
+      # Install sklearnserver - use uv sync for dependencies, then pip install for the package
+      cd python/sklearnserver && uv sync --active --no-cache && cd ../..
+      cd python/sklearnserver && uv pip install . --no-cache && cd ../..
+
+      # Override transitive dependencies pinned in upstream uv.lock files to fix CVEs
+      # (CVE-2026-63374 anyio, CVE-2026-21226 azure-core, CVE-2026-102267/102268 PyJWT).
+      # Remove once upstream bumps these.
+      uv pip install --no-cache "anyio>=4.14.2" "azure-core>=1.38.0" "pyjwt>=2.14.0"
+
+      # Promote the packages we've installed from the virtual env to the primed image
+>>>>>>> f21ce1c (fix: Pin dependencies in sklearnserver to fix vulnerabilities (#357))
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
       cp -fr /usr/local/lib/python3.11/dist-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
 
