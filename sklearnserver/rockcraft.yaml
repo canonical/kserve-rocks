@@ -72,6 +72,11 @@ parts:
       cd python/sklearnserver && uv sync --active --no-cache && cd ../..
       cd python/sklearnserver && uv pip install . --no-cache && cd ../..
 
+      # Override transitive dependencies pinned in upstream uv.lock files to remediate CVEs
+      # (CVE-2026-63374 anyio, CVE-2026-21226 azure-core, CVE-2026-102267/102268 PyJWT).
+      # Remove once upstream bumps these.
+      uv pip install --no-cache "anyio>=4.14.2" "azure-core>=1.38.0" "pyjwt>=2.14.0"
+
       # Promote the packages we've installed from the virtual env to the primed image
       mkdir -p $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages
       cp -fr ./python_venv/lib/python3.11/site-packages/* $CRAFT_PART_INSTALL/usr/local/lib/python3.11/dist-packages/
